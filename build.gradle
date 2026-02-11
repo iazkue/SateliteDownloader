@@ -1,0 +1,34 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+application {
+    mainClass = 'tfg.satelitedownloader.SateliteDownloaderApplication'
+}
+
+group = 'tfg.satelitedownloader'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation platform('io.dropwizard:dropwizard-bom:5.0.0')
+    implementation 'io.dropwizard:dropwizard-core:5.0.0'
+    implementation 'io.dropwizard:dropwizard-assets:5.0.0'
+    implementation 'io.dropwizard:dropwizard-hibernate:5.0.0'
+    implementation 'com.h2database:h2:2.2.224'
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+}
+
+run {
+    args = ['server', 'config.yml']
+}
+
+test {
+    useJUnitPlatform()
+}

@@ -1,0 +1,214 @@
+
+> Task :compileJava FAILED
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:22: error: cannot find symbol
+    private final CopernicusProvider copernicusProvider;
+                  ^
+  symbol:   class CopernicusProvider
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:23: error: cannot find symbol
+    private final CopernicusTileDAO copernicusTileDAO;
+                  ^
+  symbol:   class CopernicusTileDAO
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:25: error: cannot find symbol
+    public SateliteDownloaderResource(CopernicusProvider copernicusProvider,
+                                      ^
+  symbol:   class CopernicusProvider
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:26: error: cannot find symbol
+                                      CopernicusTileDAO copernicusTileDAO) {
+                                      ^
+  symbol:   class CopernicusTileDAO
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:46: error: cannot find symbol
+        List<CopernicusTileEntity> tiles = copernicusTileDAO.findAll();
+             ^
+  symbol:   class CopernicusTileEntity
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:105: error: cannot find symbol
+        Provider tileProvider;
+        ^
+  symbol:   class Provider
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:127: error: cannot find symbol
+                area = GeoJsonConverter.convertToWKT(geojsonString);
+                       ^
+  symbol:   variable GeoJsonConverter
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:130: error: cannot find symbol
+                tileProvider = new LandsatProvider();
+                                   ^
+  symbol:   class LandsatProvider
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:133: error: cannot find symbol
+                area = GeoJsonConverter.convertToBoundingBox(geojsonString);
+                       ^
+  symbol:   variable GeoJsonConverter
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:136: error: cannot find symbol
+                tileProvider = new ModisProvider();
+                                   ^
+  symbol:   class ModisProvider
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:138: error: cannot find symbol
+                area = GeoJsonConverter.convertToBoundingBox(geojsonString);
+                       ^
+  symbol:   variable GeoJsonConverter
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:144: error: cannot find symbol
+        List<Tile> tiles =  tileProvider.getTile(name, dateStart, dateEnd, area);
+             ^
+  symbol:   class Tile
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:154: error: cannot find symbol
+        Tile firstTile = tiles.get(0);
+        ^
+  symbol:   class Tile
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:222: error: cannot find symbol
+        Provider tileProvider;
+        ^
+  symbol:   class Provider
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:244: error: cannot find symbol
+                area = GeoJsonConverter.convertToWKT(geojsonString);
+                       ^
+  symbol:   variable GeoJsonConverter
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:247: error: cannot find symbol
+                tileProvider = new LandsatProvider();
+                                   ^
+  symbol:   class LandsatProvider
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:250: error: cannot find symbol
+                area = GeoJsonConverter.convertToBoundingBox(geojsonString);
+                       ^
+  symbol:   variable GeoJsonConverter
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:253: error: cannot find symbol
+                tileProvider = new ModisProvider();
+                                   ^
+  symbol:   class ModisProvider
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:255: error: cannot find symbol
+                area = GeoJsonConverter.convertToBoundingBox(geojsonString);
+                       ^
+  symbol:   variable GeoJsonConverter
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:261: error: cannot find symbol
+        List<Tile> tiles = tileProvider.getTile(name, dateStart, dateEnd, area);
+             ^
+  symbol:   class Tile
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:268: error: cannot find symbol
+        if (tileProvider instanceof CopernicusProvider) {
+                                    ^
+  symbol:   class CopernicusProvider
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:270: error: cannot find symbol
+            String previewsFolder = propsReader.get("COPERNICUS_PREVIEW_FOLDER");
+                                    ^
+  symbol:   variable propsReader
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:275: error: cannot find symbol
+                accessToken = ((CopernicusProvider) tileProvider).getAccessToken();
+                                ^
+  symbol:   class CopernicusProvider
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:281: error: cannot find symbol
+            for (Tile tile : tiles) {
+                 ^
+  symbol:   class Tile
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:282: error: cannot find symbol
+                if (tile instanceof CopernicusTile) {
+                                    ^
+  symbol:   class CopernicusTile
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:283: error: cannot find symbol
+                    CopernicusTile cTile = (CopernicusTile) tile;
+                    ^
+  symbol:   class CopernicusTile
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:283: error: cannot find symbol
+                    CopernicusTile cTile = (CopernicusTile) tile;
+                                            ^
+  symbol:   class CopernicusTile
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/api/SateliteDownloaderResource.java:289: error: cannot find symbol
+                            ((CopernicusProvider) tileProvider).downloadPreviewImage(previewLink, accessToken, outputPath);
+                              ^
+  symbol:   class CopernicusProvider
+  location: class SateliteDownloaderResource
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/Main.java:11: error: cannot find symbol
+        Provider tileProvider;
+        ^
+  symbol:   class Provider
+  location: class Main
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/Main.java:20: error: cannot find symbol
+                tileProvider = new CopernicusProvider();
+                                   ^
+  symbol:   class CopernicusProvider
+  location: class Main
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/Main.java:27: error: cannot find symbol
+                tileProvider = new LandsatProvider();
+                                   ^
+  symbol:   class LandsatProvider
+  location: class Main
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/Main.java:33: error: cannot find symbol
+            case 3 -> tileProvider = new ModisProvider();
+                                         ^
+  symbol:   class ModisProvider
+  location: class Main
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/Main.java:37: error: cannot find symbol
+        List<Tile> tiles =  tileProvider.getTile(name, dateStart, dateEnd, area);
+             ^
+  symbol:   class Tile
+  location: class Main
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/SateliteDownloaderApplication.java:13: error: cannot find symbol
+            CopernicusTileEntity.class) {
+            ^
+  symbol:   class CopernicusTileEntity
+  location: class SateliteDownloaderApplication
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/SateliteDownloaderApplication.java:14: error: method does not override or implement a method from a supertype
+        @Override
+        ^
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/SateliteDownloaderApplication.java:38: error: cannot find symbol
+        CopernicusTileDAO tileDAO = new CopernicusTileDAO(hibernateBundle.getSessionFactory());
+        ^
+  symbol:   class CopernicusTileDAO
+  location: class SateliteDownloaderApplication
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/SateliteDownloaderApplication.java:38: error: cannot find symbol
+        CopernicusTileDAO tileDAO = new CopernicusTileDAO(hibernateBundle.getSessionFactory());
+                                        ^
+  symbol:   class CopernicusTileDAO
+  location: class SateliteDownloaderApplication
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/SateliteDownloaderApplication.java:39: error: cannot find symbol
+        CopernicusProvider copernicusProvider = new CopernicusProvider(tileDAO);
+        ^
+  symbol:   class CopernicusProvider
+  location: class SateliteDownloaderApplication
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/SateliteDownloaderApplication.java:39: error: cannot find symbol
+        CopernicusProvider copernicusProvider = new CopernicusProvider(tileDAO);
+                                                    ^
+  symbol:   class CopernicusProvider
+  location: class SateliteDownloaderApplication
+/home/iazkue/Documents/TFG/SateliteDownloader/src/main/java/tfg/satelitedownloader/SateliteDownloaderApplication.java:40: error: cannot find symbol
+        environment.jersey().register(new SateliteDownloaderResource(copernicusProvider, tileDAO));
+                                          ^
+  symbol:   class SateliteDownloaderResource
+  location: class SateliteDownloaderApplication
+40 errors
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileJava'.
+> Compilation failed; see the compiler error output for details.
+
+* Try:
+> Run with --info option to get more log output.
+> Run with --scan to get full insights.
+
+BUILD FAILED in 885ms
+1 actionable task: 1 executed
