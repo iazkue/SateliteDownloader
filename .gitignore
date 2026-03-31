@@ -43,3 +43,4 @@ bin/
 /imagesPreviewFolder/
 /data/
 /imagesPreviewFolder/
+src/main/resources/config.properties
