@@ -53,7 +53,7 @@ public class CopernicusProvider implements Provider {
         String encodedArea = URLEncoder.encode(area, StandardCharsets.UTF_8);
 
         String query = String.format(
-                "?$filter=Collection/Name eq '%s' and OData.CSC.Intersects(area=geography'%s') and ContentDate/Start gt %s and ContentDate/Start lt %s&$expand=Assets",
+                "?$filter=Collection/Name eq '%s' and OData.CSC.Intersects(area=geography'%s') and ContentDate/Start gt %s and ContentDate/Start lt %s&$expand=Assets&$top=1000",
                 encodedName, encodedArea, encodedDateStart, encodedDateEnd);
 
         query = query.replace(" ", "%20");
