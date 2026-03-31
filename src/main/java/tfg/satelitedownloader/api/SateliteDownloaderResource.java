@@ -19,6 +19,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,11 +35,14 @@ public class SateliteDownloaderResource {
     private static final Logger LOGGER = Logger.getLogger(SateliteDownloaderResource.class.getName());
     private final CopernicusProvider copernicusProvider;
     private final CopernicusTileDAO copernicusTileDAO;
+    private final LinkedBlockingQueue<SatelliteDownloadRequest> queue;
 
     public SateliteDownloaderResource(CopernicusProvider copernicusProvider,
-            CopernicusTileDAO copernicusTileDAO) {
+            CopernicusTileDAO copernicusTileDAO,
+            LinkedBlockingQueue<SatelliteDownloadRequest> queue) {
         this.copernicusProvider = copernicusProvider;
         this.copernicusTileDAO = copernicusTileDAO;
+        this.queue = queue;
     }
 
     @GET
@@ -80,16 +84,19 @@ public class SateliteDownloaderResource {
 
             LOGGER.info("Processing satellite download request: " + request.toString());
 
-            // Execute the main logic with the provided parameters
-            SatelliteDownloadResponse response = executeMainLogic(
-                    request.getInitialDay(),
-                    request.getFinalDay(),
-                    request.getGeoJson().toString());
+            // Add the request to the queue (Producer)
+            queue.put(request);
 
-            LOGGER.info("Satellite download completed successfully");
+            SatelliteDownloadResponse response = new SatelliteDownloadResponse(
+                    "success",
+                    "Satellite download request added to queue for background processing",
+                    0,
+                    null);
+
+            LOGGER.info("Satellite download queued successfully");
             return Response.ok(response).build();
 
-        } catch (IOException | InterruptedException e) {
+        } catch (InterruptedException e) {
             LOGGER.log(Level.SEVERE, "Error processing satellite download", e);
             SatelliteDownloadResponse errorResponse = new SatelliteDownloadResponse(
                     "error", "Failed to download satellite data: " + e.getMessage());
@@ -105,75 +112,6 @@ public class SateliteDownloaderResource {
                     "error", "An unexpected error occurred: " + e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(errorResponse).build();
         }
-    }
-
-    /**
-     * Executes the main satellite download logic from the Main class
-     */
-    private SatelliteDownloadResponse executeMainLogic(String iday, String fday, String geojsonString)
-            throws IOException, InterruptedException {
-
-        int option = 1; // Default to Copernicus
-        Provider tileProvider;
-        String name = "";
-        String dateStart = "";
-        String dateEnd = "";
-        String area = "";
-
-        // Set the dates from the request
-        dateStart = iday;
-        dateEnd = fday;
-
-        switch (option) {
-            case 1 -> {
-                tileProvider = copernicusProvider;
-                name = "SENTINEL-2";
-                // Convert dates to proper format if needed
-                if (!dateStart.contains("T")) {
-                    dateStart = dateStart + "T00:00:00.000Z";
-                }
-                if (!dateEnd.contains("T")) {
-                    dateEnd = dateEnd + "T00:00:00.000Z";
-                }
-                // Convert GeoJSON to WKT format for Copernicus
-                area = GeoJsonConverter.convertToWKT(geojsonString);
-            }
-            case 2 -> {
-                tileProvider = new LandsatProvider();
-                name = "Global Land Survey";
-                // Convert GeoJSON to bounding box format for Landsat
-                area = GeoJsonConverter.convertToBoundingBox(geojsonString);
-            }
-            case 3 -> {
-                tileProvider = new ModisProvider();
-                // Convert GeoJSON to bounding box format for MODIS
-                area = GeoJsonConverter.convertToBoundingBox(geojsonString);
-            }
-            default -> throw new IllegalArgumentException("Invalid option");
-        }
-
-        // Execute the main logic
-        List<Tile> tiles = tileProvider.getTile(name, dateStart, dateEnd, area);
-
-        if (tiles.isEmpty()) {
-            return new SatelliteDownloadResponse("success", "No tiles found for the specified criteria", 0, null);
-        }
-
-        // for (Tile tile : tiles) {
-        // tileProvider.downloadTile(tile);
-        // }
-
-        Tile firstTile = tiles.get(0);
-        tileProvider.downloadTile(firstTile);
-
-        String[] tileParams = firstTile.getParametersForDownload();
-        String tileInfo = tileParams.length > 0 ? tileParams[0] : "Tile downloaded successfully";
-
-        return new SatelliteDownloadResponse(
-                "success",
-                "Satellite images downloaded successfully",
-                tiles.size(),
-                tileInfo);
     }
 
     @POST
