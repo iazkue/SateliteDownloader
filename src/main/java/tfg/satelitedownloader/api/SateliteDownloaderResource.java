@@ -17,7 +17,9 @@ import io.dropwizard.hibernate.UnitOfWork;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
@@ -160,6 +162,23 @@ public class SateliteDownloaderResource {
         }
     }
 
+    @GET
+    @Path("/previews/{filename}")
+    @Produces("image/png")
+    public Response getPreviewImage(@PathParam("filename") String filename) {
+        String previewsFolder = tfg.satelitedownloader.util.propsReader.get("COPERNICUS_PREVIEW_FOLDER");
+        if (previewsFolder != null) {
+            previewsFolder = previewsFolder.trim();
+        } else {
+            previewsFolder = "imagesPreviewFolder"; // fallback
+        }
+        File file = new File(previewsFolder, filename);
+        if (!file.exists()) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(file).build();
+    }
+
     /**
      * Executes the preview download logic - searches for tiles and downloads their
      * preview images
@@ -217,6 +236,7 @@ public class SateliteDownloaderResource {
         if (tileProvider instanceof CopernicusProvider) {
             int previewsDownloaded = 0;
             String previewsFolder = propsReader.get("COPERNICUS_PREVIEW_FOLDER");
+            List<String> previewImages = new ArrayList<>();
 
             // Get access token for preview downloads
             String accessToken = null;
@@ -234,10 +254,12 @@ public class SateliteDownloaderResource {
 
                     if (previewLink != null && !previewLink.isEmpty()) {
                         try {
-                            String outputPath = previewsFolder + "/" + cTile.getName() + "_preview.png";
+                            String filename = cTile.getName() + "_preview.png";
+                            String outputPath = previewsFolder + "/" + filename;
                             ((CopernicusProvider) tileProvider).downloadPreviewImage(previewLink, accessToken,
                                     outputPath);
                             previewsDownloaded++;
+                            previewImages.add(filename);
                             LOGGER.info("Preview downloaded for tile: " + cTile.getName());
                         } catch (Exception e) {
                             LOGGER.log(Level.WARNING, "Failed to download preview for tile: " + cTile.getName(), e);
@@ -246,11 +268,13 @@ public class SateliteDownloaderResource {
                 }
             }
 
-            return new SatelliteDownloadResponse(
+            SatelliteDownloadResponse resp = new SatelliteDownloadResponse(
                     "success",
                     "Preview downloads completed",
                     previewsDownloaded,
                     "Downloaded " + previewsDownloaded + " out of " + tiles.size() + " preview images");
+            resp.setPreviewImages(previewImages);
+            return resp;
         }
 
         return new SatelliteDownloadResponse(

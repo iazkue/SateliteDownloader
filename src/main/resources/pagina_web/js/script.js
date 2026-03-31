@@ -112,7 +112,7 @@ function showPolygonArea(e) {
 
   if (area < max_area) {
     e.layer.bindPopup(area.toFixed(2) + ' km<sup>2</sup>');
-    document.getElementById('post-btn').disabled = false;
+    document.getElementById('post-btn').disabled = true;
     document.getElementById('preview-btn').disabled = false;
   } else {
     e.layer.bindPopup(customPopup, customOptions);
@@ -192,10 +192,21 @@ if (button_submit) {
       }
 
       // Prepare the data to send (matching backend field names)
+      const selectedImages = [];
+      const checkboxes = document.querySelectorAll('.preview-checkbox');
+      if (checkboxes.length > 0) {
+        checkboxes.forEach(cb => {
+          if (cb.checked) {
+            selectedImages.push(cb.value);
+          }
+        });
+      }
+
       const requestData = {
         iday: initDay,
         fday: endDay,
         geojson: JSON.stringify(geoJasonArea), // Convert object to string
+        selectedImages: selectedImages
       };
 
       console.log('Sending request to /api/downloadImages:', requestData);
@@ -323,6 +334,43 @@ if (button_preview) {
 
       if (response.ok) {
         console.log('Preview download completed successfully!', result);
+
+        const previewContainer = document.getElementById('preview-container');
+        previewContainer.style.display = 'block';
+        previewContainer.innerHTML = '<h5 class="mb-3">Select the images you want to download:</h5><div class="row g-3"></div>';
+        const gallery = previewContainer.querySelector('.row');
+
+        if (result.previewImages && result.previewImages.length > 0) {
+          result.previewImages.forEach(filename => {
+            const colDiv = document.createElement('div');
+            colDiv.className = 'col-6';
+            colDiv.innerHTML = `
+                  <div class="card p-2 h-100 border-primary">
+                    <img src="/api/previews/${filename}" alt="${filename}" style="width: 100%; height: 150px; object-fit: cover;" class="mb-2 rounded">
+                    <div class="form-check text-start">
+                        <input class="form-check-input preview-checkbox" type="checkbox" value="${filename}" id="check_${filename}" checked>
+                        <label class="form-check-label text-break" style="font-size: 0.8rem;" for="check_${filename}">
+                            ${filename}
+                        </label>
+                    </div>
+                  </div>
+                `;
+            gallery.appendChild(colDiv);
+          });
+
+          const checkboxes = document.querySelectorAll('.preview-checkbox');
+          checkboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+              const anyChecked = Array.from(checkboxes).some(c => c.checked);
+              document.getElementById('post-btn').disabled = !anyChecked;
+            });
+          });
+          document.getElementById('post-btn').disabled = false;
+        } else {
+          previewContainer.innerHTML += '<p class="text-muted">No preview images found.</p>';
+          document.getElementById('post-btn').disabled = false;
+        }
+
         alert(
           'Preview download request submitted successfully!\n' +
           (result.message || 'Processing...'),
@@ -389,7 +437,7 @@ document.getElementById('sh-navarre').onclick = function () {
     .fail(function (err) {
       console.error('Failed to load Navarre KML:', err);
     });
-  document.getElementById('post-btn').disabled = false;
+  document.getElementById('post-btn').disabled = true;
   document.getElementById('preview-btn').disabled = false;
 };
 document.getElementById('sh-rioja').onclick = function () {
@@ -428,7 +476,7 @@ document.getElementById('sh-rioja').onclick = function () {
     .fail(function (err) {
       console.error('Failed to load La Rioja KML:', err);
     });
-  document.getElementById('post-btn').disabled = false;
+  document.getElementById('post-btn').disabled = true;
   document.getElementById('preview-btn').disabled = false;
 };
 document.getElementById('sh-madrid').onclick = function () {
@@ -467,7 +515,7 @@ document.getElementById('sh-madrid').onclick = function () {
     .fail(function (err) {
       console.error('Failed to load Madrid KML:', err);
     });
-  document.getElementById('post-btn').disabled = false;
+  document.getElementById('post-btn').disabled = true;
   document.getElementById('preview-btn').disabled = false;
 };
 document.getElementById('sh-euskadi').onclick = function () {
@@ -506,7 +554,7 @@ document.getElementById('sh-euskadi').onclick = function () {
     .fail(function (err) {
       console.error('Failed to load Euskadi KML:', err);
     });
-  document.getElementById('post-btn').disabled = false;
+  document.getElementById('post-btn').disabled = true;
   document.getElementById('preview-btn').disabled = false;
 };
 document.getElementById('sh-aragon').onclick = function () {
@@ -545,7 +593,7 @@ document.getElementById('sh-aragon').onclick = function () {
     .fail(function (err) {
       console.error('Failed to load Aragón KML:', err);
     });
-  document.getElementById('post-btn').disabled = false;
+  document.getElementById('post-btn').disabled = true;
   document.getElementById('preview-btn').disabled = false;
 };
 // Clear areas

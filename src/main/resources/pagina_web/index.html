@@ -1,38 +1,42 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<html lang="en">
 
 <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 
-<title>Satellite downloader</title>
+    <head>
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Satellite downloader</title>
 
-	<link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/slideContainer.css">
-    <link rel="stylesheet" href="css/login.css">
-    <!-- COMENTAR ESTO PARA QUITAR BOOTSTRAP -->
-    <link rel="stylesheet" href="css/bootstrap.min.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
-          integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
-          crossorigin=""/>
-    <link href='https://api.mapbox.com/mapbox.js/v3.3.1/mapbox.css' rel='stylesheet'/>
-    <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.4.10/leaflet.draw.css' rel='stylesheet'/>
+        <link rel="stylesheet" href="css/styles.css">
+        <link rel="stylesheet" href="css/slideContainer.css">
+        <link rel="stylesheet" href="css/login.css">
+        <!-- COMENTAR ESTO PARA QUITAR BOOTSTRAP -->
+        <link rel="stylesheet" href="css/bootstrap.min.css">
 
-    <!-- SCRIT IMPORTS -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+            integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+            crossorigin="" />
+        <link href='https://api.mapbox.com/mapbox.js/v3.3.1/mapbox.css' rel='stylesheet' />
+        <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.4.10/leaflet.draw.css' rel='stylesheet' />
+
+        <!-- SCRIT IMPORTS -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
             integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
             crossorigin=""></script>
 
-    <script src='https://api.mapbox.com/mapbox.js/v3.3.1/mapbox.js'></script>
-    <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.4.10/leaflet.draw.js'></script>
-    <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-geodesy/v0.1.0/leaflet-geodesy.js'></script>
+        <script src='https://api.mapbox.com/mapbox.js/v3.3.1/mapbox.js'></script>
+        <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.4.10/leaflet.draw.js'></script>
+        <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-geodesy/v0.1.0/leaflet-geodesy.js'></script>
 
-    <script src='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js'></script>
+        <script
+            src='https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js'></script>
 
-</head>
+    </head>
+
 <body>
 
     <div id="map-container">
@@ -51,13 +55,13 @@
                         <ul class="nav nav-tabs" id="myTab" role="tablist">
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link active" id="home-tab" data-bs-toggle="tab"
-                                        data-bs-target="#home" type="button" role="tab" aria-controls="home"
-                                        aria-selected="true">Manual
+                                    data-bs-target="#home" type="button" role="tab" aria-controls="home"
+                                    aria-selected="true">Manual
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile"
-                                        type="button" role="tab" aria-controls="profile" aria-selected="false">
+                                    type="button" role="tab" aria-controls="profile" aria-selected="false">
                                     Predefined
                                 </button>
                             </li>
@@ -100,8 +104,21 @@
                     <br>
                     <div class="row justify-content-center">
                         <div class="d-grid gap-2 col-6 mx-auto">
-                            <button type="button" class="btn btn-outline-success" id="post-btn" disabled>Submit</button>
-                            <button type="button" class="btn btn-outline-primary" id="preview-btn" disabled>Preview</button>
+                            <button type="button" class="btn btn-outline-primary" id="preview-btn"
+                                disabled>Preview</button>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="row justify-content-center">
+                        <div id="preview-container" class="col-12"
+                            style="display:none; max-height: 400px; overflow-y: auto; text-align: center;">
+                            <!-- Previews injected here -->
+                        </div>
+                    </div>
+                    <div class="row justify-content-center">
+                        <div class="d-grid gap-2 col-6 mx-auto">
+                            <button type="button" class="btn btn-outline-success" id="post-btn"
+                                disabled>Download</button>
                         </div>
                     </div>
                 </form>
@@ -109,13 +126,12 @@
         </div>
     </div>
 
-<script src="js/script.js"></script>
-<script src="js/leaflet.shpfile.js"></script>
-<script src="js/togeojson.js"></script>
-<!-- COMENTAR ESTO PARA QUITAR BOOTSTRAP -->
-<script src="js/bootstrap.min.js"></script>
-<script src="js/bootstrap.bundle.js"></script>
+    <script src="js/script.js"></script>
+    <script src="js/leaflet.shpfile.js"></script>
+    <script src="js/togeojson.js"></script>
+    <!-- COMENTAR ESTO PARA QUITAR BOOTSTRAP -->
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/bootstrap.bundle.js"></script>
 </body>
+
 </html>
-
-

@@ -9,6 +9,7 @@ public class SatelliteDownloadResponse {
     private String message;
     private int tilesFound;
     private String downloadedTile;
+    private java.util.List<String> previewImages;
 
     // Default constructor
     public SatelliteDownloadResponse() {
@@ -58,5 +59,13 @@ public class SatelliteDownloadResponse {
 
     public void setDownloadedTile(String downloadedTile) {
         this.downloadedTile = downloadedTile;
+    }
+
+    public java.util.List<String> getPreviewImages() {
+        return previewImages;
+    }
+
+    public void setPreviewImages(java.util.List<String> previewImages) {
+        this.previewImages = previewImages;
     }
 }
