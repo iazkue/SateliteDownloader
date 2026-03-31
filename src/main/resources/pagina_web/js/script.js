@@ -348,7 +348,7 @@ if (button_preview) {
                   <div class="card p-2 h-100 border-primary">
                     <img src="/api/previews/${filename}" alt="${filename}" style="width: 100%; height: 150px; object-fit: cover;" class="mb-2 rounded">
                     <div class="form-check text-start">
-                        <input class="form-check-input preview-checkbox" type="checkbox" value="${filename}" id="check_${filename}" checked>
+                        <input class="form-check-input preview-checkbox" type="checkbox" value="${filename}" id="check_${filename}">
                         <label class="form-check-label text-break" style="font-size: 0.8rem;" for="check_${filename}">
                             ${filename}
                         </label>
@@ -365,7 +365,7 @@ if (button_preview) {
               document.getElementById('post-btn').disabled = !anyChecked;
             });
           });
-          document.getElementById('post-btn').disabled = false;
+          document.getElementById('post-btn').disabled = true;
         } else {
           previewContainer.innerHTML += '<p class="text-muted">No preview images found.</p>';
           document.getElementById('post-btn').disabled = false;
