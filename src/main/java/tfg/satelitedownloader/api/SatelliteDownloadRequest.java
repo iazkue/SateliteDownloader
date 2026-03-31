@@ -64,12 +64,23 @@ public class SatelliteDownloadRequest {
         return geojson;
     }
 
+    private java.util.List<String> selectedImages;
+
+    public java.util.List<String> getSelectedImages() {
+        return selectedImages;
+    }
+
+    public void setSelectedImages(java.util.List<String> selectedImages) {
+        this.selectedImages = selectedImages;
+    }
+
     @Override
     public String toString() {
         return "SatelliteDownloadRequest{" +
                 "iday='" + iday + '\'' +
                 ", fday='" + fday + '\'' +
                 ", geojson='" + geojson + '\'' +
+                ", selectedImages=" + selectedImages +
                 '}';
     }
 }

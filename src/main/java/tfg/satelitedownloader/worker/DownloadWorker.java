@@ -1,6 +1,10 @@
 package tfg.satelitedownloader.worker;
 
 import io.dropwizard.lifecycle.Managed;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.context.internal.ManagedSessionContext;
 import tfg.satelitedownloader.api.SatelliteDownloadRequest;
 import tfg.satelitedownloader.core.Provider;
 import tfg.satelitedownloader.core.Tile;
@@ -20,11 +24,14 @@ public class DownloadWorker implements Managed, Runnable {
 
     private final LinkedBlockingQueue<SatelliteDownloadRequest> queue;
     private final CopernicusProvider copernicusProvider;
+    private final SessionFactory sessionFactory;
     private Thread workerThread;
 
-    public DownloadWorker(LinkedBlockingQueue<SatelliteDownloadRequest> queue, CopernicusProvider copernicusProvider) {
+    public DownloadWorker(LinkedBlockingQueue<SatelliteDownloadRequest> queue, CopernicusProvider copernicusProvider,
+            SessionFactory sessionFactory) {
         this.queue = queue;
         this.copernicusProvider = copernicusProvider;
+        this.sessionFactory = sessionFactory;
     }
 
     @Override
@@ -50,7 +57,24 @@ public class DownloadWorker implements Managed, Runnable {
                 // Petizioa egon arte haria blokeatzen du (consumer)
                 SatelliteDownloadRequest request = queue.take();
                 LOGGER.info("Se ha extraído una petición de descarga de la cola.");
-                processRequest(request);
+
+                // Since this is a background thread without @UnitOfWork, we need to manually
+                // open a session
+                // and bind it to the thread context so that the DAOs can use currentSession().
+                try (Session session = sessionFactory.openSession()) {
+                    ManagedSessionContext.bind(session);
+                    Transaction transaction = session.beginTransaction();
+                    try {
+                        processRequest(request);
+                        transaction.commit();
+                    } catch (Exception e) {
+                        transaction.rollback();
+                        throw e;
+                    } finally {
+                        ManagedSessionContext.unbind(sessionFactory);
+                    }
+                }
+
             } catch (InterruptedException e) {
                 LOGGER.info("DownloadWorkerThread ha sido interrumpido.");
                 Thread.currentThread().interrupt();
@@ -102,7 +126,31 @@ public class DownloadWorker implements Managed, Runnable {
                 return;
             }
 
-            Tile firstTile = tiles.get(0);
+            // Also applies selected images filter if they are attached to the request
+            List<Tile> tilesToDownload = tiles;
+            List<String> selectedImages = request.getSelectedImages();
+            if (selectedImages != null && !selectedImages.isEmpty()) {
+                tilesToDownload = new java.util.ArrayList<>();
+                for (Tile tile : tiles) {
+                    if (tile instanceof tfg.satelitedownloader.model.CopernicusTile) {
+                        tfg.satelitedownloader.model.CopernicusTile cTile = (tfg.satelitedownloader.model.CopernicusTile) tile;
+                        String expectedFilename = cTile.getName() + "_preview.png";
+                        if (selectedImages.contains(expectedFilename)) {
+                            tilesToDownload.add(tile);
+                        }
+                    } else {
+                        tilesToDownload.add(tile);
+                    }
+                }
+                LOGGER.info("Filtrando a " + tilesToDownload.size() + " imágenes seleccionadas.");
+            }
+
+            if (tilesToDownload.isEmpty()) {
+                LOGGER.info("No hay tiles que coincidan con la selección del usuario.");
+                return;
+            }
+
+            Tile firstTile = tilesToDownload.get(0);
             String tileInfo = firstTile.getParametersForDownload().length > 0 ? firstTile.getParametersForDownload()[0]
                     : "tile";
             LOGGER.info("Iniciando descarga de: " + tileInfo);

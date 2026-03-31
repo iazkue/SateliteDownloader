@@ -43,8 +43,10 @@ public class SateliteDownloaderApplication extends Application<DropWizardConfigu
         CopernicusProvider copernicusProvider = new CopernicusProvider(tileDAO);
 
         java.util.concurrent.LinkedBlockingQueue<tfg.satelitedownloader.api.SatelliteDownloadRequest> queue = new java.util.concurrent.LinkedBlockingQueue<>();
-        tfg.satelitedownloader.worker.DownloadWorker worker = new tfg.satelitedownloader.worker.DownloadWorker(queue,
-                copernicusProvider);
+        tfg.satelitedownloader.worker.DownloadWorker worker = new tfg.satelitedownloader.worker.DownloadWorker(
+                queue,
+                copernicusProvider,
+                hibernateBundle.getSessionFactory());
         environment.lifecycle().manage(worker);
 
         environment.jersey().register(new SateliteDownloaderResource(copernicusProvider, tileDAO, queue));
