@@ -1,0 +1,461 @@
+\chapter[Using ground-truth data for improving satellite imagery]{Using ground-truth data for improving satellite imagery}
+\label{Chap6}
+
+%\thispagestyle{empty}
+
+\section{Introduction}
+\label{Chap6_sec:Introduction}
+
+%The Chapter 6 propose a study on how the use of covariates can improve the quality of satellite images. In the study the SSM model introduced in chapter 4 is used and is compared with a new smoothing method designed in this work. The proposed method is based on the same premise of IMA where a satellite image is expressed as the sum of an average image and an anomaly. This new smoothing method uses covariates to model the anomaly and thus improve the predictions. The name of the new method is thin-plate splines with covariates (TpsWc), because it accepts the use of external data as covariates. Both methods, the SSM and the TpsWc are used in two different scenarios to conduct the study. In the first scenario, the methods are executed without covariates and in the second scenario, the rainfall covariates are added. To see the response of the models with different variables, the study is carried out on three types of satellite variables, the NDVI, the day LST and the night LST. The results show that the use of covariates improves the predictions of NDVI and the two LST variables analyzed in all the proposed scenarios. The results also show better predictions in the new TpsWc method compared to SSM predictions. The chapter contains the following 5 sections, section 1 "introduction", section 2 "Modis data and rainfall stations", section 3 "The methods", section 4 "Analysis and results", and the chapter ends with section 5 where the conclusions of the work are presented.
+%	
+%	The introductory section explains another problem when using satellite images, the quality of the data. In addition to the clouds and even after processing the images, the satellite images usually have small anomalies and capture errors that must be corrected. These errors usually appear in the images as extreme observations.
+%	
+%The section 2 presents the Modis satellite images used in the simulation study. The section introduces 3 time series corresponding to the 3 different variable types: NDVI, day LST and night LST. The section also describes the data obtained from rainfall stations in Navarra. However, the rainfall data is a set of stations that must be adapted to be compatible with the images. That is why this section presents the processing done on rainfall data. The section ends with a descriptive analysis of the data.
+%
+%
+%The section 3 describes in detail the spatio-temporal procedures used to analyze the usefulness of covariates in the smoothing of satellite images. Special mention is made of the TpsWc method, because it is a new proposal for smoothing satellite images, explaining the necessary adaptations of the data and the model.
+%
+%
+%The section 4 explains the proposed simulation study, and presents its results. The results show better predictions in all proposed the scenarios for both models in the version using the covariates compared to the same model without covariates. In addition, the proposed new method shows better predictions in all scenarios.
+%
+%
+%The section 5 presents the conclusions. The greatest contribution of this work is prove that the use of covariates improve the quality of the data in satellite images. The study implements 2 methods to work with a great number of locations. The new smoothing proposal is also presented as a competitive alternative for improving the quality of satellite images.
+
+
+%\section{Spatio-temporal models for disease mapping}
+%\label{Chap1_sec:ST_models}
+
+%A wide range of spatio-temporal models for disease mapping have been proposed in the literature, most of them based on CAR models extending the well known BYM model \citep{besag1991bayesian}. In this section two models with parametric time trends and a battery of non-parametric models including different types of space-time interactions \citep{held2000bayesian} will be described.
+%
+%Suppose that the region under study is divided into $n$ small areas labelled as $i=1,\ldots,n$. For each area $i$, data are available for different time periods labelled by $t=1,\ldots,T$. Then, conditional on the relative risk $r_{it}$, the number of counts $O_{it}$ is assumed to be Poisson distributed with mean $\mu_{it}=e_{it}r_{it}$, where $e_{it}$ is the number of expected cases for area $i$ and time $t$. That is
+%\begin{eqnarray*}
+%\label{eq:PoissonST}
+%\begin{array}{rcl}
+%O_{it}|r_{it} & \sim & Poisson(\mu_{it}=e_{it}r_{it}), \\[1ex]  %\quad  \mbox{for} \quad  i=1,\ldots,n \mbox{ ; } t=1,\ldots,T,\\
+%\log(\mu_{it}) & = & \log(e_{it})+\log(r_{it}).
+%\end{array}
+%\end{eqnarray*}
+%Here, $\log(e_{it})$ is an offset and depending on the specification of $\log(r_{it})$ different models are defined.
+
+
+
+%\section{Introduction}
+
+%The presence of clouds, atmospheric absorption, weather effects and sensor-introduced noise can be important causes of distorted and missing data in satellite imagery. Therefore, numerous gap-filling and smoothing techniques have been developed in the past few years. Next, we cite some of these techniques. Timesat~\cite{eklundh2012timesat,jonsson2004timesat} and Hants~\cite{verhoef1996cover} are very popular because of their good performance and free access. Both methods are mathematical procedures based on filtering and harmonic analysis and use multitemporal imagery for filling gaps, but do not use external auxiliary information. These~approaches can be applied to long series of data and smooth complete series of images without any priorspecification of the gaps to be filled. The moving weighted harmonic analysis (MWHA)~\cite{yang2015moving} is another method based on a modification of the previous cited Hants technique that incorporates a moving support domain to assign the weights for all the points, therein greatly simplifying the determination of the frequency number. The spatially- and temporally-weighted regression (STWR) method~\cite{chen2017spatially} is more strongly focused on filling cloud gaps. This approach requires a~one-by-one identification of the gaps and utilizes a simple least-squares linear regression to capture the temporal trends characterizing invariant similar pixels. Vuolo et al.~\cite{vuolo2017smoothing} developed a proposal for smoothing and gap-filling high-resolution multi-spectral time series using the Whittaker smoother and derived information about the neighborhood. Gapfill~\cite{gerber2016predicting} is a recent alternative that uses specific ordering among images and quantile regression for the gap-filling process. This technique achieves a~great performance because it produces smoothed images of high quality; however, it is slow when filling large gaps, and it needs a prior specification of the gaps to be filled.
+
+%The MODIS and LANDSAT missions are carrying out similar programs for processing common remote sensing data derived from multi-temporal series of images in a routine manner. The normalized difference vegetation index (\emph{NDVI}) % NDVI are changed to be italics, pleaes confirm.
+%and the day and night land surface temperature (LST) are two examples of such data.
+% Smoothing \emph{NDVI} is frequently conducted with the maximum value composite (MVC) procedure~\cite[]{holben}. It assigns the maximum value of the time series of pixels across the composite period. Alternative
+%techniques include the use of a bidirectional reflectance distribution function (BRDF-C%please define C
+%),
+%the constrained maximum value composite (CV%Please define abbreviations the first time they appear in the abstract, main body, and a figure or table description, respectively.
+%-MVC)~\cite{modis}, the mean value iteration filter (MVI), the changing-weight filter (CW) and the interpolation for data reconstruction (IDR) technique~\cite{geng2014comparison}. %(MODIS user guide 2008).
+%For day and night LST, it is common to average the cloud-free pixels over the composite period~\cite[]{vancutsem2010evaluation}.
+%Composite images are then of weekly or biweekly temporal resolution. 
+
+%However, even after the composition process, residual noise can still arise
+%in images, and therefore, a smoothing procedure using high-spatio-temporal-resolution ground-truth data is proposed in this paper.
+%Frequently, remote sensing data are proxy variables in mathematical or statistical models for improving the predictions of ground-truth data.
+%For example, land surface temperature from MODIS MOD11A2 was used as a proxy variable in a spatio-temporal regression model for
+%smoothing temperatures in Croatia~\cite{hengl2012spatio}, but used a reduced number of images and rain gauge stations.
+%To improve the estimation of the area occupied by olive trees, a unit level linear mixed model was proposed, whereby the auxiliary variable came from multispectral Landsat 7 ETM images~\cite{militino2006using}.
+%Different geostatistical models were checked with soil data collected with automated sensor networks
+%to provide the spatio-temporal interpolation of soil water, temperature and electrical conductivity in the Cook Agronomy Farm dataset~\cite{gasch2015spatio}.
+%A~distributed lag model for assessing the impact of current and previous 16-day rainfall anomalies was proposed
+%based on the enhanced vegetation index as a proxy for above-ground net productivity in South Africa~\cite{udelhoven2015assessing}.
+%A complete reconstruction of time series of daily LST data in central Europe from 2003 to 2016 was achieved in~\cite{neteler2017},
+%where remote sensing emissivity and elevation were used as external covariates in the spatio-temporal interpolation process.
+%The authors used air temperature ground-truth data to check the predicted values. In this case, various remote sensing data were
+%the explanatory variables of the models used for improving the predictions in other remote sensing data.
+%Research wherein ground-truth data are used as proxy variables wherein remote sensing data including the target variable are more scarce. Only recently, we have found a cubic spline model that has been combined with a weighted least squares regression~\cite{Wongsai} for extracting the seasonality characterizing the land surface temperature and a space-state model (SSM) that has been introduced for detecting changes in trends of surfaces occupied by different categories of \emph{NDVI} in continental Spain during 2011, 2012, and 2013~\cite{militino2017stochastic}.
+
+The presence of clouds, atmospheric absorption, weather effects and sensor-introduced noise can be important causes of distorted and missing data in satellite imagery. Therefore, numerous gap-filling and smoothing techniques have been developed in the past few years. However, even after the composition process, residual noise can still arise
+in images, and therefore, a smoothing procedure using high-spatio-temporal-resolution ground-truth data is proposed in this work.
+
+This chapter proposes a study on how the use of covariates can improve the quality of satellite images. In the study, the SSM model introduced in chapter \ref{Chap4} is used and is compared with a new smoothing method designed in this work. The proposed method is based on the same premise of IMA where a satellite image is expressed as the sum of an average image and an anomaly. This new smoothing method uses covariates to model the anomaly and thus improve the predictions. The name of the new method is thin-plate splines with covariates (TpsWc), because it uses thin plate splines as a generalization of a regression model wherein the linear relationship between the response variable and the coordinates is substituted by a non-parametric function providing a more flexible fitting~\cite{whaba}. 
+Under certain conditions, the thin-plate splines are formally equivalent to kriging~\cite{hutchinson1994splines}, and because the measure of smoothness is invariant under the rotation of the coordinates, thin-plate splines are specially suited for spatial data. 
+The thin-plate splines have an important advantage with regard to universal kriging because they do not need to fit variograms. Moreover, the estimators of the thin-plane splines can be obtained in a closed form by solving a linear system of $n$ equations, where $n$ is the number of data points.
+
+Both methods, the SSM and the TpsWc are used in two different scenarios to conduct the study. In the first scenario, the methods are executed without covariates and in the second scenario, the rainfall covariates are added. To see the response of the models with different variables, the study is carried out on three types of satellite variables, the NDVI, the day LST and the night LST. The results show that the use of covariates improves the predictions of NDVI and the two LST variables analysed in all the proposed scenarios. The results also show better predictions in the new TpsWc method compared to SSM predictions.
+
+
+%The approach used here is based on fitting second-order splines to the anomalies obtained from the median of the target gap image neighborhood, therein
+%using the temporal and spatial dependences of
+% the previous and subsequent images across different years for smoothing potential outliers.
+%Using only the coordinates, but without external covariates, the~performance of thin-plate splines for filling gaps was evaluated in
+%a simulation study, which showed that this technique is faster and more accurate than Timesat, Hants and Gapfill when filling different sizes of gaps in day and night LST and is equally
+%competitive when filling \emph{NDVI} gaps~\cite{militino2017rse}. Here, we improve this proposed method by including auxiliary variables from ground-truth data, which must be fitted at the same
+%spatio-temporal resolution as remote sensing data. We also focus on smoothing outliers instead of filling gaps, and we compare the performance of the newly-proposed method
+%with a spatio-temporal state-space model using the same ground-truth data. We check the performance through a simulation
+%study whereby time series of three different remote sensing datasets are altered and later smoothed with these models.
+
+
+Figure~\ref{Chap6:diagrama} shows the flowchart of this work. First, meteorological and remote sensing data are taken. Second, daily ground-truth information needs to be averaged over 8-day and 16-day periods to match the corresponding day and night LST and \emph{NDVI} time periods. These data are interpolated in the study region of Navarre (Spain) (see Figure~\ref{navarramap}) through a thin-plate spline model with altitude as the external covariate. This is a preliminary task because these data are a small discrete set, and greater spatial resolution is recommended for predicting. For the simulation study, remote sensing data are altered with different sizes of distortions, i.e., 5\%, 10\%, 15\% and 20\%, and different magnitudes are used according to the derived variables. Third, we fit different models for every outlier outbreak: a state-space model with covariates (SSMWc), a thin-plate spline model with covariates (TpsWc), a~state-space model without covariates (SSMWoc) and a thin-plate spline model without covariates (TpsWoc). All of these methods provide multi-temporal smoothed series of the three remote sensing datasets. Finally, to compare model performances, we obtain the square root of the mean squared prediction error, which will be summarized in graphs and tables.
+
+
+\begin{figure}[ht]
+\centering
+%			\fbox{\includegraphics[width=0.6\textwidth]{./artificialCloudNDVI.png}}
+    \includegraphics[width=11cm]{Chapter6/Illustration/DiagramaUnai.pdf}  \vspace{-6pt}
+    	\caption{Flowchart of the process for evaluating the performance of the smoothing methods: state-space model with covariates (SSMWc),
+    Tps with covariates (TpsWc), state-space model without covariates (SSMWoc) and Tps without covariates (TpsWoc).}\label{Chap6:diagrama}
+\end{figure}
+
+The chapter contains the following sections, Section \ref{Chap6_sec:Data} explains the Modis satellite images used in the simulation study. The section introduces three time series corresponding to the three different variable types: NDVI, day LST and night LST. The section also describes the data obtained from rainfall stations in Navarra. However, the rainfall data is a set of stations that must be adapted to be compatible with the images. That is why this section presents the processing done on rainfall data. The section ends with a descriptive analysis of the data. Section \ref{Chap6_sec:methods} describes in detail the spatio-temporal procedures used to analyze the usefulness of covariates in the smoothing of satellite images. Special mention is made of the TpsWc method, because it is a new proposal for smoothing satellite images, explaining the necessary adaptations of the data and the model, Section \ref{Chap6_sec:results} explains the proposed simulation study, and presents its results. The results show better predictions in all proposed the scenarios for both models in the version using the covariates compared to the same model without covariates. Finally Section \ref{Chap6_sec:results} presents the conclusions.
+
+\section{Data}
+\label{Chap6_sec:Data}
+Navarre is a region of approximately 10,000 km$^2$ located in the north of Spain (see Figure~\ref{navarramap}). Elevations vary between 200 and 2500 meters in the highest zone of the
+Pyrenees, located in Northeastern Navarre. Valleys and mountains are ubiquitous in the north, and small hills are common
+in the central part of the province.
+The northwest of Navarre is humid, but not highly so, and the northeast is a mountainous region with elevations between 1459 m and 2438.
+The central area is characterized by a temperate Mediterranean climate, with a tendency towards a continental climate.
+The south is mainly flat; the climate is Mediterranean and continental with dry summers; temperatures exhibit large annual variations;
+there is minimal and irregular rainfall;
+and northerly winds are frequent. Clearly, the climate varies across the province, and large weather differences can be experienced on the same day.
+
+
+In this study, we have drawn classical variables, such as the maximum temperature and humidity, from 48 rain gauge
+stations. The data are of daily temporal resolution, from which weekly and biweekly mean data are derived.
+The average distance among rain gauge stations is approximately $15$~km.
+\begin{figure}[ht]
+ \centering
+ %[width=.45\textwidth]
+  \includegraphics[scale=.30]{Chapter6/Illustration/PluvAutoNavarra.pdf}
+  \vspace{-6pt}
+
+ \caption{Map of Navarre region, located in the north of Spain and with a common border to the south of France. Black dots correspond to the rain gauge stations used in this study.}\label{navarramap}
+\end{figure}
+The Moderate Resolution Imaging Spectroradiometer (MODIS) provided the day and night LST composite images from Version-5 MOD11A2 (Terra) and the \emph{NDVI} composite images from both Version-5 MOD13A2 (Terra) and Version-5 MYD13A2 (Aqua); see the URL~\cite{MODIS2018} for details. We have focused on composite images of the Navarre region from the 2011 to 2015 time period. Each of the day LST and night LST
+remote sensing datasets require $230$ tiles for enclosing Navarre. These datasets correspond to 46 scenes with a temporal resolution of 8 days every year for 5 years.
+Terra and Aqua have different starting dates each year because Terra starts on the first day of January and Aqua starts on the ninth day of January. Therefore, to achieve two composite \emph{NDVI} images per month every year, we~have retrieved 23 images from Aqua and one image from Terra, fitted to November. In total, $120$~scenes with a 16-day temporal resolution have been captured across 5 years of study.
+The spatial resolution of each tile is equal to $166 \times 154$ (25,564) pixels of approximately 1 km$^2$.
+Inside the Navarre borders, 11,691 pixels are enclosed.
+All images have been downloaded from~\cite{earthexplorer2012} in Hierarchical Data Format (HDF). This format helps catalog geo-referenced images, but makes data processing more difficult. Then, all images were transformed into TIFF format to be processed by the R software~\citep{rcore2019}.
+
+
+%\emph{NDVI} is a very useful index for agricultural mapping, yield monitoring and measuring changes in ecosystems, land use and climate at both global and regional scales~\cite{sellers1985canopy,slayback2003northern,tucker2005extended}.
+%It~is obtained in two important bands, the red (\emph{R}) and near-infrared (\emph{NIR}), and is calculated as
+%\mbox{$NDVI =((NIR) - R)/((NIR) + R)$~\cite{rouse1974monitoring}}.
+%\emph{NDVI} has a theoretical maximum of one, and its relationship to vegetation characteristics, such as biomass, productivity, percent cover and leaf area index, is~asymptotically nonlinear as it approaches one. \emph{NDVI} is less sensitive to ground characteristics at higher values and essentially saturates when the leaf area index is greater than one~\cite{van2005optical}.
+%Barren land, sand and snow usually present very low \emph{NDVI} values, and sparse vegetation presents values of approximately between 0.2 and 0.5. High \emph{NDVI} values, roughly from 0.6 to 0.9, correspond to dense vegetation from crops at their peak growth stage and tropical vegetation.
+
+The MODIS LST product is derived from two thermal infrared (TIR) channels: 31 (10.78 to 11.28 $\upmu$m) and 32 (11.77 to 12.27 $\upmu$m). More information can be found in~\cite{benali2012estimating}.
+Assuming that the signal difference in the two TIR bands is caused by differential absorption
+of radiation in the atmosphere, the correction of atmospheric effects is performed with the split-window algorithm~\citep{wan1996generalized}.
+Using prior knowledge of the land cover type classification based on the MODIS land cover product (MOD12C1), this algorithm corrects for emissivity effects. %
+Uncertainty in LST estimates increases when significant variations in temperature occur at the 5-km$^2$ scale~\cite{wan1997physics}. %
+Errors in LST retrieval may be larger in bare soil and highly heterogeneous areas due to large uncertainties in surface emissivities and when the column water vapor content is high~\citep{wan1997physics}.
+An eight-day composite period was chosen because twice this period is the exact ground track repeat period of the Terra platform. LST over eight days is the averaged LSTs of the MOD11A2 product for eight days. Processing these images will preserve the original temperature in Kelvin.
+
+\begin{figure}[ht]
+ \centering
+ %[width=.45\textwidth]
+  \includegraphics[scale=.50]{Chapter6/Illustration/boxplot2011_lstd_lstn.pdf}
+
+  \caption{From the top to bottom, boxplots of day LST (in Kelvin), night LST (in Kelvin) for the 46 time periods of 2011.}
+\label{boxplot2011LST}
+\end{figure}
+
+\begin{figure}[ht]%\ContinuedFloat
+\centering
+  \includegraphics[scale=.50]{Chapter6/Illustration/boxplot2011_tmax_hmed.pdf}%  \vspace{-12pt}
+
+  \caption{From the top to bottom, $T_{max}$ (in~Celsius) and $H_{mean}$ (in percentages) for the 46 time periods of 2011.}\label{boxplot2011rainfall}%in the figures throughout, use the date format DD Month
+\end{figure}
+
+
+
+Both derived variables come from composite images, meaning that they have been pre-processed to reduce noise coming
+from atmospheric and electronic effects and that their accuracy has also been checked via ground-truth data at a coarse spatial resolution.
+However, when downscaling these data to small regions and comparing them with ground-truth data, we can observe, in some seasons,
+typically in autumn and winter, some abnormal results.
+Figures ~\ref{boxplot2011LST} and \ref{boxplot2011rainfall} shows from the top to bottom the boxplots of the day LST and night LST remote sensing data and those of the mean maximum temperature
+($T_{max}$) and the mean humidity ($H_{mean}$) in Navarre during 2011 for 46 time periods.
+ Each boxplot depicts the median in the horizontal line and the dispersion of every image in a particular stage.
+ Within each box, data between the first and third quantiles are plotted. Dots outside vertical extensions might be, but are not necessarily outliers.
+ The meteorological variables $T_{max}$ and $H_{mean}$ have been chosen because
+they are the most highly correlated with day and night LST and \emph{NDVI} during the time periods. Figure~\ref{boxplot2011ndvi} shows the boxplots of \emph{NDVI} in the 24 time periods of 2011.
+In Figures \ref{boxplot2011LST}, \ref{boxplot2011rainfall}, and \ref{boxplot2011ndvi}, all the variables show a clear pattern of seasonality, yet in $H_{mean}$, larger variability is observed.
+Day and night LST and $T_{max}$ show a parallel concave shape and therefore a positive correlation across time periods; $H_{mean}$ is more convex, showing a negative correlation
+with day and night LST. \emph{NDVI} presents a different seasonality pattern, which is negatively correlated with $T_{max}$ and positively correlated with $H_{mean}$ across
+the time periods. In summer, all the variables are more stable and show less variability. Similar phenology patterns are found across the study period of 2011- to 2015.
+
+Figure~\ref{verde} shows Navarre images in the third week of 2011. At the top, day LST and $T_{max}$ (in~Celsius) are shown, and at the bottom, night LST (in Celsius) and $H_{mean}$ (in percentages) are presented. We can also see the large similarity among these patterns on these dates. The dots on the right images correspond to the rain gauge stations used as ground-truth data. Figure~\ref{ndvi} shows the altitude of Navarre and the \emph{NDVI} on the second fortnight of February 2014 because \emph{NDVI} includes 24 periods. In this figure, we can also check why similar patterns correspond to a high correlation.
+
+
+
+
+
+
+
+\begin{figure}[ht]
+ \centering
+  \includegraphics[scale=.40]{Chapter6/Illustration/boxplot2011_ndvi.pdf}
+ \caption{Boxplots of \emph{NDVI} (with a zero to 10,000 scale) in the 24 time periods of 2011.}
+ % Please confirm if comma should be added in nunbers of more than four digital numbers.
+ %%%%% Ok
+ \label{boxplot2011ndvi}
+\end{figure}
+
+
+
+
+
+\begin{figure}[ht]
+ \centering
+  \includegraphics[width=0.33\textwidth]{Chapter6/Illustration/Navarra_LSTDay_Febrero3.pdf}
+  \includegraphics[width=0.33\textwidth]{Chapter6/Illustration/Navarra_Tmax_Febrero3.pdf}
+  \includegraphics[width=0.33\textwidth]{Chapter6/Illustration/Navarra_LSTNight_Febrero3.pdf}
+  \includegraphics[width=0.33\textwidth]{Chapter6/Illustration/Navarra_Hmed_Febrero3.pdf}
+
+  \caption{Images of Navarre for the third week of February 2014. At the top, day LST and $T_{max}$ images (in Celsius) are presented, and at the bottom, night LST (in Celsius) and $H_{mean}$ (in percentages) are shown. These images show similar patterns. Black dots represent rain gauge stations.}\label{verde}
+\end{figure}
+
+\begin{figure}[ht]
+ \centering
+   \includegraphics[width=0.45\textwidth]{Chapter6/Illustration/Navarra_Altitude.pdf}
+   \includegraphics[width=0.45\textwidth]{Chapter6/Illustration/Navarra_NDVI_2Febrero2.pdf}
+    \caption{On the left is the altitude map, and on the right is the \emph{NDVI} image of Navarre on the second fortnight of February 2014. Both figures show similar patterns because they are highly correlated.}\label{ndvi}
+\end{figure}
+
+
+\section{Methods}
+\label{Chap6_sec:methods}
+
+Filling gaps and removing abnormal observations in satellite imagery are traditionally performed by mathematical or statistical procedures based on modelling similarities of the same historical series of images. Few methods use external information. The newly-proposed method in this work, named TpsWc, uses additional auxiliary data from external sources, and it is compared with a state-space model that uses the same auxiliary variables or covariates.
+
+\subsection{The thin-plate spline model with covariates}
+
+First, we fix the target image to be smoothed and define its neighborhood. Let us assume that we have an day LST target image.
+In this case, $G=46$ images are available every year from ($r=2011,\ldots,2015$), %from the first to the last year of the study period,
+which should be arranged into a $5 \times G=5 \times 46$ matrix, where the rows of the matrix correspond to different years. In the \emph{NDVI} case, $G=24$ images are available each year; they~should be arranged into a $5 \times 24$ matrix.
+ All the images in the same column correspond to the same time period, but different years. They share a neighbor composed of this column and the previous and subsequent columns of images; therefore, the neighbor of every target image consists of 15 images. In~the first time period of 2011 and in the last time period of 2015,
+previous and subsequent images are also needed, but they do not correspond to the years under study.
+The second step of this procedure is to compute the median image out of those 15 images and obtain the corresponding anomalies for the target image.
+The anomalies could come from the mean or median. It is more convenient to calculate them from the mean in the gap-filling process because the mean can be obtained without missing values; calculating from the median should be performed
+when smoothing altered pixels, because it is more robust, and we are likely not aware of altered pixels.
+
+In greater detail, let us denote $z_{s_irg}$ as the derived variable in location $s_i=(x_i,y_i)$, $(i=1,\ldots,n_0)$,
+where $n_0=$ 25,564 is the total number of pixels in the target image for year $r$.
+Then, the $s_i$-th pixel of the median image of time $g$ across the years is defined over the 15 images involved in its neighborhood, i.e.,
+\begin{eqnarray}
+\displaystyle z_{s_i0g}=median\{z_{s_irg_0}\} \left\{
+\begin{array}{l}
+ g_0=(g-1),g,(g+1)\\
+ r=2011,\ldots, 2015\\
+ \end{array}
+    \right.
+\end{eqnarray}
+and the anomalies are obtained as the differences between the original values and the median:
+\begin{equation}
+w_{s_irg}=z_{s_irg}-z_{s_i0g}, \quad \mbox{for} \quad i=1,\ldots,n_0, \quad
+ g=1,\ldots,G, \quad r=2011,\ldots, 2015.
+ \end{equation}
+
+
+Next, a thin-plate spline model (Tps) is applied to a 5-times lower resolution of the anomalies inside Navarre obtained through a median aggregation. Therefore, the median can be calculated within the tile of 25,564 pixels, but the model will be constrained to the $n_1=$ 11,691$/25\approx 468$ pixels inside Navarre because that is where we possess ground-truth data. The reduction factor is recommended because it speeds up the running process and facilitates the previous image smoothing, but this can vary depending on the computer speed and memory.
+The thin-plate spline additive model for every image in a fixed time period $g$ and year $r$ with covariates is expressed as a non-parametric function of the coordinates plus the sum of three transformed external covariates: the altitude $({\Nu_{1}}_{{\bf s} })$,
+maximum mean temperature $({\Nu_{2}}_{{\bf s} rg})$ and mean humidity $({\Nu_{3}}_{{\bf s} rg})$. Then,
+\begin{equation}\label{TpsWc}
+\mathbf{w}_{{\bf s}rg} =f({{\bf s}}) + \beta_1{\Nu_1}_{\bf s}+\beta_2{\Nu_2}_{{\bf s}rg}+ \beta_3{{\bf u}_3}_{{\bf s}rg}+\Nepsilon_{{\bf s}rg},
+\quad g=1,\ldots,G, \quad r=2011,\ldots,2015,
+\end{equation}
+where ${\bf s}=(s_1,\ldots,s_{n_1})'$ is the vector of locations, % $\mathbf{x}_{s}=(x_1,\ldots,x_n)$ and $\mathbf{y}_{s}=(y_1,\ldots,y_n)$ are the planar coordinates,
+$f({{\bf s}})$ is a non-parametric function of the coordinates and $\beta_j$ are the model coefficients $(j = 1,2,3)$ associated with the covariates. They need to be estimated from the data because, later, we will be able to calculate the smoothed images. For every year $r$ and stage $g$,
+$\mathbf{w}_{{\bf s}rg}=(w_{s_1rg},\ldots,w_{s_{n_1}rg})$ is the vector of remote sensing anomalies, and
+%${\Nu_m}_{s rg}={\Nu_{0m}}_{s rg} -median_{j=1,\ldots,T} \{z_{s_irg}\}$ %${\Nu_m}_{s t_j}=(u_{ms_1t_j},\ldots,u_{ms_nt_j})$
+${\Nu_j}_{{\bf s} rg}={\Nu_{0j}}_{{\bf s} rg} -\{z_{{\bf s}0g}\}$ ($j=1,2,3$) are the transformed covariates of their original covariates: altitude $({\Nu_{01}}_{\bf s })$, maximum temperature $({\Nu_{02}}_{{\bf s} rg})$ and mean humidity $({\Nu_{03}}_{{\bf s} rg})$.
+%${\Nu_{02}}_{srg}$, and
+%${\Nu_m}_{s t_j}=(u_{ms_1t_j},\ldots,u_{ms_nt_j})$
+%${\Nu_3}_{s rg}={\Nu_{03}}_{s rg} -\{z_{0g}\}$ is the transformed covariate of the original $H_{mean}$ ${\Nu_{03}}_{srg}$.
+%are the transformed covariates from the original ones ${\Nu_{0m}}_{srg}$ from $(m = 2,3)$,
+
+This transformation is needed to preserve the correlation between the response variable calculated as median anomalies of the remote sensing data and the transformed covariates of $T_{max}$, $H_{mean}$ and~altitude. This is because day LST, night LST and \emph{NDVI} remote sensing data are correlated with $T_{max}$, $H_{mean}$ and altitude, respectively, but their anomalies are not necessarily correlated with these. Therefore, a simple transformation that consists of subtracting the remote sensing median from the covariates is needed.
+The error vector $\Nepsilon_{{\bf s}rg}$ has zero mean and variance $\sigma^2$.
+The thin-plate spline prediction is obtained as a weighted average of the observed data because the optimal estimate %of $f(\mathbf{x}_{s},\mathbf{y}_{s})$
+is linear in the observations. Finally, the predictions
+${\hat{\bf z}_{{\bf s}rg}}={\bf z}_{{\bf s}rg}+z_{{\bf s}0g}$ are computed
+over the $n_0$ pixels of the original resolution. Model (\ref{TpsWc}) with covariates (TpsWc) and without covariates (TpsWoc) is run for all $rg$ time periods, the three remote sensing datasets and the four sizes of distortions for the simulation study.
+The \textsf{R} package {fields}~\citep{fields} % is the italics necessary?
+estimates second-order thin-plate spline models by fitting a~surface to
+irregularly-spaced data.
+
+
+\subsection{The state-space model with covariates}
+\label{Chap6_sec:stem}
+ This model is a stochastic spatio-temporal model (SSM)~\citep{durbin2012time} widely used for dynamical systems~\citep[see][]{amisigo2005using,militino2015interpolation,militino2017stochastic}.
+ The model includes two equations: the transition Equation (\ref{Chap6:eq1}) and the state Equation (\ref{Chap6:eq2}). The first equation explains a linear regression between the response variable and the covariates. In this example, the response variable is the remote sensing data (day and night LST and \emph{NDVI}), and the covariates are the meteorological variables $T_{max}$, $H_{mean}$ and altitude.
+The~second equation expresses the temporal dependence. % In this work, $z_{st}$ denotes the remote sensing data at location $s$ and time $t$.
+The stochastic process at $n_2$ locations $s_{1},\ldots,s_{n_2}$ and $t=1,\ldots,T_m$ time points is represented
+by $\mathbf{z}_{st}=(z(s_{1},t_1),z(s_{1},t_2),\ldots,z(s_{1},t_3),\ldots,z(s_{n_2},t_{T_m}))'$, where~$\mathbf{z}_{st}$ can be day and night LST or \emph{NDVI},
+and $T_m=5 \mbox{ years } \times G_m$. The value of $G_m$ depends on both the remote sensing data and the $m$-th climatological season.
+In winter (January, February and~March) and summer (July, August and September), there are $G_m=11$ day and night LST composite images, and~in
+spring (April, May and June) and fall (October, November and December), there are $G_m=12$ day and night LST composite images.
+When using \emph{NDVI}, there are $G_m=6$ images in each climatological~season.
+
+In this application, we consider $n_2=208$ locations obtained by defining a $7 \times 7$ km$^2$ grid inside Navarre.
+The state-space model with covariates (SSMWc) is given by:
+\begin{eqnarray}
+\mathbf{z}_{st} & = & \gamma_{0} + \gamma_{1}\mathbf{u}_{01{s}} +\gamma_{2}\mathbf{u}_{02st}+ \gamma_{3}\mathbf{u}_{03t} + \mathbf{v}_t+ \mathbf{\Nepsilon}_{st}, \quad \Nepsilon_{st}\sim N_{n_2}({\bf 0},\NSigma_{\Nepsilon}(d)), \label{Chap6:eq1}\\
+\mathbf{v}_t & = & {{\bf G}}\mathbf{v}_{t-1} + {\Neta}_{t}, \quad \mathbf {v}_0 \sim N(\Nmu_0,\NSigma_0), \quad {\Neta}_{t} \sim N\left({\bf 0},\NSigma_{\eta}\right), \label{Chap6:eq2}
+\end{eqnarray}
+where now %$\mathbf{z}_{st}$ is the spatio-temporal process of ndvi,
+$\gamma_{i}$ $(i=0,1,2,3)$ are the model coefficients to be estimated. The first covariate $\mathbf{u}_{01s}$ %three covariates, $\mathbf{x_1}_{s}, \mathbf{x_1}_{s}$ and $\mathbf{x_3}_{s}$
+is time invariant and corresponds to the altitude of the $n_2$ gridded locations. The remainder of the covariates, ${\Nu}_{02st}$ and ${\Nu}_{03st}$,
+ are the spatio-temporal meteorological covariates: maximum temperature ($T_{max}$) and mean humidity ($H_{mean}$) {depending on} the location $s$ and time $t$.
+ The unobservable latent temporal process, $\mathbf{v}_{t}$, considers the temporal dynamics of data
+ through an {autoregressive} process. This~means that the current state $\mathbf{v}_t$ depends on the previous
+ state $\mathbf{v}_{t-1}$ in the state equation {through a transition matrix {\bf G}}. The initial %$T \times 1$
+ state vector $\mathbf{v}_0$ is assumed to be normally distributed with mean $ \Nmu_0$ and covariance~$\NSigma_0$.
+
+This state-space model is fitted in the \textsf{R} %please check the use of \textsf
+ statistical software using the {Stem} %please check the use of \texttt
+ package~\citep{stem}. In~this application, state-space models with covariates (SSMWc) and without covariates (SSMWoc) are estimated for the three remote sensing datasets, the four types of outlier outbreaks and all images between 2011 and 2015.
+
+
+
+\section{Results and discussion}
+\label{Chap6_sec:results}
+To check the contribution of the ground-truth data for improving the quality of satellite imagery, a simulation
+study is conducted in Navarra using $120$ composite images of \emph{NDVI}, $230$ composite images of day LST and $230$ composite images of night LST between 2011 and 2015. In this simulation study, we randomly include four different sizes of outlier outbreaks with $5\%, 10\%, 15\%$ and $20\%$ abnormal observations in each image. % $n_0$ pixels. %The outbreaks represent the $5\%, 10\%, 15\%$ and $20\%$ of the $n_0$ pixels in the tile enclosing Navarre, because when calculating the medians for the Tps with or without covariates, the whole tile is included.
+The distortion consists of altering 50\% of the \emph{NDVI} raw data, 5\% of the day LST raw data and 5\% of the night LST raw data. The distortion percentages look different, but all represent approximately 50\% of the range of the three remote sensing datasets used in this work.
+The~performance of the methods is evaluated with the square root of the mean squared prediction error, defined by:
+
+\begin{align}
+RMSE(j,k,l,m)=&\sqrt{\dfrac{\sum_{i,t}(z_{itjklm}-\hat{z}_{itjklm})^2}{n_4T_m}}, \\
+& i=1,\ldots,n_4 \nonumber\\  
+& t=1,\ldots,T_m \nonumber\\ 
+& j=TpsWc, TpsWoc,SSMWc,SSMWoc \nonumber\\ 
+& k= 5\%, 10\%, 15\%, 20\% \nonumber\\  
+& l=day LST, night LST, \emph{NDVI} \nonumber\\ 
+& m=winter, spring, summer, fall, \nonumber
+\end{align}
+where $z_{ijkl}$ and $\hat{z}_{ijkl}$ are the original and predicted derived variables, respectively; $n_4=$ 11,691 is the number of pixels inside the Navarre borders; and $T_m$ is the number of images in the $m$-th climatological season across the five years (see Subsection \ref{Chap6_sec:stem}).
+ %: $5 \times 11$ day and night LST images corresponding to Winter (January, February, March) and Summer (July, August, September),
+ %and $5 \times 12$ images for Spring (April, May, Jun) and Fall (October, November, December).
+ %For analysing NDVI there are $G_m=5 \times 6$ images every climatological season,
+ The index $j=TpsWc, TpsWoc,SSMWc,SSMWoc$ %italics for these terms? please check the convention
+ indicates the type of model; $k$ is the type of distortion; and $l$ is the type of derived variable.
+ %Figure~\ref{diagrama} summarizes the whole process followed in this simulation study.
+ $RMSE(j,k,l,m)$ is calculated and plotted in Figures \ref{LSTDayecm} and \ref{NDVIecm}.
+ Figure~\ref{LSTDayecm} depicts the RMSE of day LST and night LST for the two versions of Tps, i.e., TpsWc (blue with covariates) and TpsWoc (purple without covariates), and SSM, i.e., SSMWc (red with covariates) and SSMWoc (green without covariates). In all cases, TpsWc outperforms the remaining models, as it achieves the lowest RMSE.
+Figure~\ref{NDVIecm} shows the RMSE obtained after smoothing \emph{NDVI}. TpsWc is again the best method in all the climatological seasons and again presents a greater difference with regard to the SSM with and without covariates (SSMWc and SSMWoc). Nevertheless, differences between
+thin-plate splines with and without covariates are apparently less important than in day LST and night LST, but only because the range of the \emph{NDVI} variable is smaller than that of LST.
+Summarizing, all the figures show lower RMSE when using covariates in both thin-plate splines (Tps) and state-space models (SSM).
+Table \ref{tabla} shows the RMSE reduction percentage
+when both models include ground-truth information compared to when not including this information. The maximum percentage reduction is approximately 20\% in night LST for TpsWc and in \emph{NDVI} for SSMWc; however,
+TpsWc clearly provides the lowest values of RMSE with and without covariates.
+
+Figure~\ref{salida} shows the effects of
+distorting the images and smoothing them in the fourth time period of November 2011. At the top and from left to right, we see the distorted image of LST with an outlier outbreak of 5\%, the TpsWc smoothed image and the SSMWc smoothed image with altitude, $T_{max}$ and $H_{mean}$ as the ground-truth covariates.
+At the bottom, the distorted image with an outlier outbreak of 20\% in the same time period and the derived smoothed images are shown. Both models remove distorted data, and SSMWc seemingly better smooths the images, but TpsWc better preserves the original image pattern. The top of Figure~\ref{boxplotfinal} shows the boxplots of the distorted images, and at the bottom, the boxplots of the smoothed images in the 46 periods of 2011 are shown. We can see how the phenology of the remote sensing data is preserved after smoothing.
+
+
+\begin{figure}[ht]
+ \centering
+%  \includegraphics[width=0.95\textwidth]{Chapter6/Illustration/LST8_Day_RMSE_Navarra_ipvo.pdf}
+  \includegraphics[scale=.45]{Chapter6/Illustration/ECM_LST_5.pdf}
+  \caption{Root mean square prediction error versus outlier outbreak percentage obtained for day ({on the top}) and night ({at the bottom}).
+  Land surface temperature (LST) by climatological seasons with the four models: space-state model (SSM) with and without covariates (SSWc in red and SSMWoc in green)
+  and Tps with and without covariates (TpsWc in blue and TpsWoc in purple).}\label{LSTDayecm}
+\end{figure}
+
+
+\begin{figure}[ht]
+ \centering
+  \includegraphics[scale=.5]{Chapter6/Illustration/ECM_NDVI_1.pdf}
+  \caption{Root mean square error versus outlier outbreak percentage obtained for the normalized difference
+  vegetation index (\emph{NDVI}) by climatological season.}\label{NDVIecm}
+\end{figure}
+
+
+
+
+
+
+
+\begin{figure}[ht]
+ \centering
+  \includegraphics[width=0.85\textwidth]{Chapter6/Illustration/Navarra_LST_Noviembre4_2011.pdf}
+  \caption{LST Navarra image in the fourth week of November 2011. In the upper row and from left to right, the 5\% distorted image, the thin-plate spline (TpsWc) and the state-space (SSMWc) smoothed images with covariates. In the lower row and from left to right, the 20\% distorted image and
+ their respective TpsWc and SSMWc smoothed images with covariates.}\label{salida}
+\end{figure}
+
+
+
+
+
+\begin{figure}[ht]
+ \centering
+ %[width=.45\textwidth]
+  \includegraphics[scale=.40]{Chapter6/Illustration/boxplot_final.pdf}
+ \caption{At the top, boxplots of the 15\% distorted images of day LST in the 46 time periods of 2011 are shown, and the bottom presents the boxplots of the smoothed day LST images by TpsWc in the same time periods.}\label{boxplotfinal}
+\end{figure}
+
+
+\begin{table}[ht]
+\centering
+\caption{Reduction percentage of the RMSE in SSM and Tps smoothing procedures with and without covariates for day LST, night LST and \emph{NDVI} for different sizes of outlier outbreaks.}%The format of the table has been changed, please confirm.
+
+\label{tabla}
+%This table has not been cited in the text, please confirm.
+\resizebox{\textwidth}{!}{\begin{tabular}{C{2cm}C{1.5cm}C{3cm}C{2cm}C{2cm}C{3cm}C{3cm}C{2cm}}
+ \toprule
+% &&&\\[-2ex]
+ & & \multicolumn{3}{c}{\textbf{SSM}} & \multicolumn{3}{c}{\textbf{Tps}} \\ \midrule
+
+
+ \multicolumn{2}{c}{\textbf{Outlier}}& \multicolumn{3}{c}{\textbf{RMSE}}& \multicolumn{3}{c}{{\textbf{RMSE}}} \\\midrule
+
+
+%&\multicolumn{2}{c}{Outlier} & \multicolumn{3}{c}{RMSE} & \multicolumn{3}{c}{ RMSE} \\\midrule
+
+
+%\vspace{-9PT}
+ \textbf{ Derived~Variable} & \textbf{Out. \%} & \textbf{Without~Covariates}& \textbf{With~Covariates}& \textbf{Reduction~\%} & \textbf{Without~Covariates}& \textbf{With~Covariates }&\textbf{Reduction \textbf{\%}} \\\midrule
+ % & & & & & & & \\
+ Day & 5 & 1.80 & 1.63 & 10.19 & 0.54 &0.51 & 7.75 \\
+ LST     & 10 & 2.33 & 2.20 & 6.21 & 0.76 &0.68 & 12.09 \\
+     & 15 & 2.86 & 2.74 & 4.47 & 1.00 &0.89 & 12.56 \\
+     & 20 & 3.54 & 3.44 & 2.89 & 1.37 &1.21 & 13.31 \\ \midrule
+ Night & 5 & 1.34 & 1.29 & 3.90 & 0.41 &0.37 & 11.89 \\
+ LST     & 10 & 1.91 & 1.85 & 2.83 & 0.57 &0.48 & 19.70 \\
+     & 15 & 2.52 & 2.47 & 1.73 & 0.78 &0.65 & 19.94 \\
+     & 20 & 3.12 & 3.08 & 1.28 & 1.13 &0.94 & 20.36 \\ \midrule
+ \emph{NDVI}   & 5 & 0.11 & 0.09 & 19.59 & 0.04 &0.04 & 1.68 \\
+     & 10 & 0.11 & 0.10 & 15.11 & 0.05 &0.05 & 1.61 \\
+     & 15 & 0.12 & 0.11 & 12.43 & 0.05 &0.05 & 1.31 \\
+     & 20 & 0.12 & 0.11 & 10.08 & 0.05 &0.05 & 1.56 \\ \bottomrule
+\end{tabular}}
+\end{table}
+
+The simulation study shows an important decrease in the RMSE calculated with both the TpsWc and SSMWc methods; however, unless we alter the ground-truth data, we cannot evaluate what occurs in terms of RMSE when the covariates exhibit higher or lower correlations with the dependent variable. %with regard to the same methods without covariates.
+This is why we have defined a new artificial covariate linearly correlated with the remote sensing data. This correlation takes on values of $0.66,0.75,0.83,0.92$ and $1$. After introducing at random 20\% abnormal observations in the time series of raw images, we smoothed them using TpsWc and SSMWc with the artificial covariate. When the correlation increases, a greater reduction in the RMSE is observed, although specific values are not shown here to preserve space.
+On average, each time we increase the linear correlation of the artificial variable with the remote sensing data by one tenth, a~3 to 4\% RMSE reduction in the TpsWc and SSMWc models is observed. Therefore, using ground-truth data for increasing the quality of composite images is a recommended option in both models, although TpsWc achieves better results, as it has the lowest RMSE.
+The mean running time of day and night LST for processing 230 images is approximately 13 min with TpsWc and 11 min with SSWc on a PC with an Intel Core i7-4790 
+3.60 GHz with 4 cores and 16 GB of RAM; therefore, both models are very fast models.
+
+
+
+\section{Conclusions}
+\label{Chap6_sec:conclusions}
+In this work, we propose to increase the quality of satellite images through the use of ground-truth data from rain gauge stations in different stochastic models.
+A preliminary analysis for assessing the quality of day LST, night LST and \emph{NDVI} remote sensing data in Navarre (Spain) during 2011 to 2015 has revealed that these composite images preserve the temporal and seasonal patterns for each year; however, fall and winter represent the most likely periods whereby these data could be more vulnerable to atmospheric and electronic errors, and some atypical observations can emerge.
+One way of avoiding abnormal values in remote sensing data is accommodating ground-truth data at high temporal and
+spatial resolutions when applying statistical models for smoothing. However, models involving both types of data and that are able to manage spatial and temporal stochastic dependences remain scarce.
+In this study, we propose a new method called TpsWc that is based on smoothing the median anomalies of the remote sensing data with a thin-plate spline model wherein the anomalies of the ground-truth data are the external covariates. The method is compared with a version without covariates (TpsWoc) and a state-space model with (SSMWc) and without covariates (SSMWoc).
+
+The new approach (TpsWc) encompasses the temporal dependence among multi-temporal satellite images because it smooths the anomalies of the previous and subsequent images across years, and it accommodates the spatial dependence fitting non-parametric functions of the coordinates with a thin-plate spline.
+Ground-truth data are included as external covariates in the model after subtracting the median. We have conducted a simulation study wherein different outlier outbreaks have been randomly introduced in the original images.
+The study finds that TpsWc is the best option for all the variables, although SSWc presents a greater reduction in the RMSE for \emph{NDVI} when using covariates. Moreover, we have found that when the covariates are more strongly
+correlated with the remote sensing data, a greater reduction in the root mean squared prediction error is achieved. Finally, the phenology of all the variables is preserved, but the potential outliers are removed in all the remote sensing data.
+
+
+The thin-plate splines and state-space models used in this work are applied in time-consuming procedures, and the running time increases when we increase the spatial and temporal resolutions of the images.
+Therefore, improving these procedures from a computational point of view remains a~matter of further research, because there are many alternatives for improving the quality of the satellite images, but only a few such methods utilize ground-truth data.
+
+\vfill
+The contents of this chapter have been published in the journal \textit{Remote Sensing}:\\
+\\ 
+\bibentry{militino2018improving}.

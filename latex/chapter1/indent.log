@@ -1,0 +1,33 @@
+INFO:  latexindent version 3.20.3, 2023-02-19, a script to indent .tex files
+       latexindent lives here: /usr/share/texlive/texmf-dist/scripts/latexindent/
+       Tue Aug 20 13:27:47 2024
+       Filename: /home/ugaitz.amozarrain/UPNA/clases/TFEs/TFG_class/chapter1/Chapter1.tex
+INFO:  Processing switches:
+       -s|--silent: Silent mode active (you have used either -s or --silent)
+       -w|--overwrite: Overwrite mode active, will make a back up before overwriting
+       -y|--yaml: YAML settings specified via command line
+INFO:  Directory for backup files and indent.log:
+       /home/ugaitz.amozarrain/UPNA/clases/TFEs/TFG_class/chapter1
+INFO:  YAML settings read: defaultSettings.yaml
+       Reading defaultSettings.yaml from /usr/share/texlive/texmf-dist/scripts/latexindent/defaultSettings.yaml
+INFO:  YAML reading settings
+       Home directory is /home/ugaitz.amozarrain
+       latexindent.pl didn't find indentconfig.yaml or .indentconfig.yaml
+       see all possible locations: https://latexindentpl.readthedocs.io/en/latest/sec-appendices.html#indentconfig-options)
+INFO:  YAML settings read: -y switch
+       YAML setting: onlyOneBackUp:1
+       Updating mainSettings with onlyOneBackUp: 1
+INFO:  Backup procedure (-w flag active):
+       copying /home/ugaitz.amozarrain/UPNA/clases/TFEs/TFG_class/chapter1/Chapter1.tex to /home/ugaitz.amozarrain/UPNA/clases/TFEs/TFG_class/chapter1/Chapter1.bak
+       /home/ugaitz.amozarrain/UPNA/clases/TFEs/TFG_class/chapter1/Chapter1.bak was overwritten (see onlyOneBackUp)
+       Backup file: /home/ugaitz.amozarrain/UPNA/clases/TFEs/TFG_class/chapter1/Chapter1.bak
+       /home/ugaitz.amozarrain/UPNA/clases/TFEs/TFG_class/chapter1/Chapter1.tex will be overwritten after indentation
+INFO:  Phase 1: searching for objects
+INFO:  Phase 2: finding surrounding indentation
+INFO:  Phase 3: indenting objects
+INFO:  Phase 4: final indentation check
+INFO:  Output routine:
+       Overwriting file /home/ugaitz.amozarrain/UPNA/clases/TFEs/TFG_class/chapter1/Chapter1.tex
+       --------------
+INFO:  Please direct all communication/issues to:
+        https://github.com/cmhughes/latexindent.pl

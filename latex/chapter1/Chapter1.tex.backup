@@ -1,0 +1,235 @@
+\chapter[Satellite imagery: data, access and download]{Satellite imagery: data, access and download}
+\label{Chap1}
+
+%\thispagestyle{empty}
+
+\section{Introduction}
+\label{Chap1_sec:Introduction}
+Satellite imagery is the field that provides images of the earth captured by artificial satellites. Since the 60s when first satellites launched, satellite imagery has became a key resource for different fields as meteorology, agriculture, forestry or geology. It also has military, intelligence, commercial or economic applications, that is why for many years satellite images was a private resource. In April 21, 2008, the United States Geological Survey (USGS) announced the free-and-open data policy in all its satellite products. Since this date open access satellite imagery has undergone a great improvement in terms of quality and quantity of this type of data. 
+
+All satellites are equipped with sensors to observe the earth. They exists many type of sensors and can be categorised in two groups, active sensors and passive sensors. One satellite can have on board more than one sensor depending on the purpose of satellite. For example Terra satellites have on board 5 different sensors \cite{terra2004}, ASTER, CERES, MISR, MODIS and MOPITT.
+Active sensors, uses on board energy to illuminate the objects they observe, and captures the reflection from the target. The best known active sensor is radar, that emits microwave radiation and capture the reflected energy. Other active sensors are laser altimeter, lidar, ranging instrument, scatterometer or sounder.
+Passive sensors, in contrast to active sensors detects natural energy reflected by the target objects. The most common source of radiation measured by passive sensors is the sunlight reflection, and the sensor to capture the sunlight reflection is hyperspectral radiometer. This type of sensor capture at the same time more than one range of light wavelength, called band. A simple example of hyperspectral radiometer its a common camera, that usually capture 3 bands red, green and blue (RGB) to generate a full color image. 
+%layers
+Hyperspectral radiometer on board in a satellite are more complex than in usual cameras and usually capture more than 10 bands. Through the combination of bands in different ways, more variables can be derived. The most common example is Normalize Different Vegetation Index (NDVI). This variable it is derived from red and near-infra red bands, and it have many applications in agriculture because measures if there is live green vegetation or not. 
+NDVI is the most common example but they are others like Enhanced Vegetation Index (EVI), Land Surface Temperature (LST), Normalized Difference Water Index (NDWI) or others. The large number of variables that can be derived become Hyperspectral images in a key resource. The main problem with this type of images are atmospheric factors, if there is a cloud or fog when a picture is captured these information will be save in the image, covering the surface of the earth.
+%The hyperspectral images are the more common satellites images for forestry or geology applications.
+%TODO en algun sitio sentiel programa con todos los satelites y sentinel-2 hyperspectrales
+
+Nowadays many organizations are publishing satellite images, among them, programs such as Landsat, Modis or Sentinel can be highlighted. There are much more programs that are publishing satellite images freely, but most of them are focused in specific areas or region. Landsat, Modis and Sentinel are satellites with a predefined orbit, and captures images around the entire earth giving a chance to a great variety of analysis in different regions. 
+%These programs are focused on publish hyperspectral images,  
+All satellite images captured by different programs publish the images with different level of processing. Usually the raw images are not published but the images with the first level of processing are almost raw images with a little smoothing. Many programs in addition to processing level, they also publish ``products''. Products are preprocessed images, among the products some of them are derived variables, others are compositions. All derived variables from raw images publish by a satellite program are called products. %IMPORTANTE explicacion composicion
+%En los las imágenes por satélite han tenido
+%que es un layer
+
+%TODO in this dissertation
+
+%In this disertation Frequently satellite images they seems very affected by atmospheric factors, So literature provides different methods to reduce outliers and avoid missing values (Gap-filling or smoothing procedures). Traditionally, mathematical methods based on harmonic analysis or filtering are the most popular for this aim
+The rest of the chapter is organized as follows. In section 1.2 Data and access were Satellite imagery data types are introduced. In section 1.3 Download using R. In section 1.4, Standardise satellite imagery data with R programming language 
+
+\section{Data and access}
+\label{Chap1_sec:Data_access}
+
+At the moment, there are three satellite programs that are publishing hyperspectral open access satellite images: Modis, Landsat and Sentinel. They were launched in different times, and with different objective. Each of the 3 projects counts with 2 satellite in orbit at the moment. Modis have Terra (1999) and Aqua (2001), Landsat have Landsat-7 (1999) and Landsat-8 (2013), and Sentinel have Sentinel-2A and Sentinel-2B. The general information of each satellite project can be seem in Table \ref{table:satellitecomp}. 
+
+Modis satellite have been designed to provide one image daily and it capture great variety of bands. As a negative point the spatial resolution of its captures it is too high if we compare with satellite from other programs. But Modis objective is provide a coarser view of the entire earth every day. The other satellites in Table \ref{table:satellitecomp} Landsat and Sentinel-2 programs provides more detailed images. This is because the main objective of these satellites it is monitor the earth in a more precision way. Landsat and Sentinel-2 programs have been designed to have two satellite in orbit at the same time, the reason is to combine the data of both satellites and reduce the temporal resolution to the halfway. But in the case of Landsat-7 in May 31 of 2003, the Scan Line Corrector (SLC), a component of the capture instrument, get failures. The broken instrument produce some missing values with lines form, and always in the same position of the image. Some procedures were published in order to correct these capture errors (CITA). But the SLC error combined with atmospheric factors make it hard to work with these images, and Landsat-7 images are not very used. In the case of Sentine-2, combining Sentine-2A and Sentine-2B images it is possible to get one image every 5 days but only since April of 2017, date where Sentinel-2B was launched.
+%imagen landasat 7
+The main problem of these high resolution images is that if a cloud appear in the image, the next image will be captured in 10-16 days. If 2 or more images includes clouds the time series of satellite images may have too much missing value for analyse.
+\begin{table}[!ht]
+\begin{center}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lrrrrrr}
+	\hline
+	\multirow{2}{*}{Satellite} &	\multicolumn{2}{c}{Modis}  &	\multicolumn{2}{c}{Landsat} & \multicolumn{2}{c}{Sentinel}	\\
+	\cline{2-7}
+	 &	Terra & Aqua & Landsat-7 & Landsat-8 & Sentinel-2A & Sentinel-2B\\
+	\hline
+	\hline
+	 Temporal resolution& daily & daily & 16 days & 16 days & 10 days& 10 days \\
+	 Spatial resolution& 250m & 250m & 30-60m & 15-30m & 10-60m& 10-60m \\
+	 Number of bands &36&36&8&11&12&12\\
+	 Image size approx. &70mb&70mb&200mb&200mb&500mb&500mb\\
+	 Image format &hdf&hdf&tif&tif&jp2&jp2\\
+	 Launch date (mm/dd/yyyy) &12/18/1999&05/04/2002&04/15/1999&02/11/2013&06/23/2015&03/07/2017\\
+	\hline
+\end{tabular}
+\end{adjustbox}
+\caption{Comparison of main characteristics of open access multi spectral images satellites: Modis, Landsat and Sentinel}
+\label{table:satellitecomp}
+\end{center}
+\end{table}
+
+%
+%Cada satelite, o proyecto suele tener su propia plataforma de descarga de datos, Modis tiene ldapaa, landsat earthexplorer, sentinel
+The organizations that publish Modis, Landsat and Sentinel are different, and each project has its download platform. In the case of Modis and Landsat, the images can be found in a web platform called earth explore (\url{https://earthexplorer.usgs.gov/}). 
+Earth explorer is a satellite images publishing platform designed centralize different open-access products. The platform is managed by USGS and it is an interesting resource because provides images from other satellites as Sentinel-2 even if they are not part of the same organization. The platform needs an user account that can be created for free. It is a easy platform to download a couple of images because it provide a Graphic User Interface (GUI). The GUI allow definition of a spatial location and a date range to perform the search. The main problem of this platform is that has been designed for download images one by one and it is not easy to download an entire time series of images. If you want to download an entire time-series all the images in the search need to be download by a person clicking separately. The download of Landsat-8 images can be a tedious work but may be possible because Landsat-8 only provide 2 images per month. Though, create a time-series of images with Modis when Terra or Aqua acquire one image per day may be impossible. 
+
+Nasa Inventory is platform that integrates Application Programming Interface (API) instead a Graphic User Interface. The API is an standard designed to provide support for applications requests and responses. It define methods of communication among Nasa Inventory platform and an application in the user computer. This publishing platform provides an easy way to search and download a time-series of Modis satellite images. The comunication of this API is done using a usual web channel HTTP. The search is done defining some variables as \textit{product=MOD09A} to define Modis product, \textit{latitude/longitude} to define the spatial location and \textit{date=2005-01-01/2010-12-31} to define the date ranges. The response is an XML file with a list images for download that matched with the search. Is a simple platform but simplifies the search and download process, and it accepts ad-hoc implementations for automatic downloads in any programming language that implements web communication technology.
+%https://lpdaacsvc.cr.usgs.gov/inventory?product=MOD09A1&version=5&latitude=23&longitude=-100&return=url&date=2005-01-01/2010-12-31&page_size=5
+
+Since May of 2014, with the objective of centralize all the information coming from satellites the National Aeronautics and Space Administration (NASA) of United States starts developing a new Remote Sensing download platform. This platform is called EarthData. The platform not only manage satellite images, it have more data sets with rainfall data or soil sampler. Today, to download any image coming from United States satellite
+%, even if is public data, 
+it is necessary to have an EarthData user account, even if the search is done with other platform. Platforms as EarthExplorer or Nasa Inventory continue working to request searches but for download, an EarthData account will be required. EarthData is a new and modern platform, and that is why integrates both, a GUI and an API. In the GUI you can perform searches specifying a spatial location and a product. The downloads are done selecting a set of images and sending a request. After a processing time, from your user panel you can download the images. In the API, as happen with Nasa Inventory, the downloads can be automatize developing  an ad-hoc application to communicate with EarthData. The main disadvantage of EarthData is that the API communication have the same constraint of GUI. The automatic application firstly need to search and selects the images, and after the selection there is some time to wait until the images are ready for download, in other platforms as EarthExplorer or Nasa Invetory this not happen. 
+
+Sentinel program have its own search and download platform called SciHub (\url{https://scihub.copernicus.eu/}). It is a platform that is still on development, because with each new satellite the support for the new images need to be implemented. As Sentinel is an European Space Agency (ESA) program, to download images from this platform, it is necessary to create a free user account. This platform is similar, in terms of technology to EarthData. The platforms have two parts, one for the GUI and the second for an API. The GUI its a map where you can select with the mouse some spatial locations. In addition to spatial locations the search allow to define a period range and the satellite to which the image belongs. The API implements 2 communication standard OpenSearch API and OpenData API, giving support for many programming languages to create automatics searches and downloads.
+\begin{table}[!ht]
+\begin{center}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lcccc}
+	\hline
+	 &	\multicolumn{1}{c}{Earth Explorer}  &	\multicolumn{1}{c}{Earth Data} & \multicolumn{1}{c}{Nasa Inventory} & \multicolumn{1}{c}{SciHub}	\\
+	\hline
+	\hline
+	GUI&yes&yes&no&yes\\
+	API&no&yes&yes&yes\\
+	Direct Download&man&man&auto&auto\\
+	Search response&HTML&XML&XML&JSON\\
+	Download Account&EarthData&EarthData&EarthData&SciHub\\
+	\hline
+	Modis Images&yes&yes&yes&no\\
+	Landsat Images&yes&yes&yes&yes\\
+	Sentinel-2 Images&no&no&no&yes\\
+	\hline
+\end{tabular}
+\end{adjustbox}
+\caption{Characteristics of publishing platforms for satellite images}
+\label{table:downplatComp}
+\end{center}
+\end{table}
+
+The Table \ref{table:downplatComp} shows the comparison of different download platforms. EarthData, Nasa Inventory and SciHub implements an Graphic User Interface, but in all the cases the download of images using GUI can be a hard work if the time period range is too long. The searches supports time ranges and spatial location to search time series of images but the download need to be one by one. In the 3 cases it become a hard work download manually an entire time series. That is why it is necessary to implement an automatic application for downloading time-series of satellite images. The best way to automatize the download procedure is use the defined API for each satellite program. EarthExplorer do not have an implemented API. EarthData has ha API but is no so easy for automatic download because after the search query there is a wait time for process the petition. This is not a problem for Modis or Sentinel images because it is possible to use Nasa Inventory and SciHub respectively. To automatize the download for Landsat it is mandatory to use EarthExplorer or Earth Data platforms.
+
+
+\section{Download using R}
+\label{Chap1_sec:Auto_download}
+The automatic procedure for download satellite images can be done with any programming language that supports web communications. After a thorough evaluation R statistical software was used for this purpose. R, in addition to core package, have native access to cran repository, and to its more than 15.000 packages that are available.  Among these packages there are some of them for network communications, and curl package can be highlighted. Curl or client URL is a library for download files performing requests on the Web. In cran, two implementations of curl can be found \textit{RCurl} and \textit{curl} packages. \textit{RCurl} have some errors in its implementation, and when web redirection is required it is not able to download the file. The use of EarthData account in Nasa Inventory or EarthExplorer suppose that redirection will be required for the automatic procedure, that is why \textit{curl} has been used instead \textit{RCurl} in automatic download functions. 
+See Table \ref{table:downplatComp} the search response of each publishing platform is different, EarthExplorer responses HTML file format, EarthData and Nasa Inventory with XML data format and SciHub with JSON data format. To perform automatic download, R need to understand these file formats, and in cran \textit{rjson} and \text{XML} libraries can be used for this purpose. In addition \textit{urltools} have been used to easy API url manages. The libraries used for automatize download are the following:
+\begin{itemize}
+	\item[] \textbf{curl}: Implements function to use the last version of libcurl, a library to perform web request. It has full support for secure connections (HTTPS), redirection and its able to have  an active user session in connections.
+	\item[] \textbf{rjson}: JSON it is advance and structured data format standard designed for web communications. It is defined to send data in web requests and to receive data in the response. As it is an structured data format complex data can be send using JSON. In R, there are more than one libraries that designed for read and create JSON files, but \textit{rjson} have been used because implements more functionalities than others. 
+	\item[] \textbf{XML}: XML is an structured data format mainly used in web communications. Many APIs or web pages used XML to publish data. In R the most common packages to manage XML are  \textit{XML} and \textit{XML2}. In download implementation \textit{XML} is used because the simplicity for read simple data.
+	\item[] \textbf{urltools}: The implementation of an automatic download procedure it needs some procedures to check and manage different request URLs. This package provides some functions to simplify these url operations as get the root of an url or add attributes for create request urls.
+	
+\end{itemize}
+The automatic procedure for download satellite images have been done creating some R functions. As each satellite program have its own publishing platform for each program different functions are needed. In all procedures 2 steps need to be define, the search function and the download function.  
+
+\subsection{Landsat images download}
+Landsat images are published in two platforms, EarthExplorer and EarthData. EarthExplorer it is not prepared for automatic download because do not have an API for this purpose. Earth data have an API but just can perform request for prepare and process the products making difficult the download of entire time series of images. The easiest way for implement an automatic download procedure is use an scraping technique over EarthExplorer publishing platform. Scraping techniques are automatic procedures for extract data from a specific format, usually web pages over HTML files. 
+%The unique way for download images is use the scraping techniques in EarthExplorer graphic user interface.
+In Earth Explorer platform all Landsat images are located in a static direction defined as \textit{http://earthexplorer.usgs.gov/download/12267/SceneID/STANDARD/EE/}, %TODO as formula in one line
+where \textit{sceneID} is the name of the LandSat image you want to download.
+Knowing the concrete  web address where are located images to download, the procedure that need to be implemented is the search of images. The use of scraping technique over the GUI is unsuitable because the platform use lots of JavaScript code and needs a person to performs searches.
+However, LandSat program publish in a csv file where all captures done by its satellites and some meta data are registered. The file is renewed every day with the entries of the new images. There is one csv file with the images for LandSat-7 and other one for LandSat-8. 
+The way to automatize the download of LandSat images is download the csv file with the meta data of all captures, and create s search function in the csv file. With the names of the images it is possible to complete the download address from EarthExplorer platform and perform an automatic downloads. The procedure has been implemented in 3 different actions: 
+
+\begin{itemize}
+	\item[] \textbf{Download meta data file}: We prepare two functions one for Landsat-8 and other one for Landsat-7. If the file do not exists or is obsolete automatically download the new meta data file and transforms the csv to an R data frame. The function is implemented in the search function to easy the procedure.
+	\item[] \textbf{Search in meta data}: We prepare a function for spatio-temporal searches in the meta data file. The function reads the LandSat meta data file and identifies images that matched with the temporal range and the spatial location. The function returns a dataframe with the images and its meta data.
+	\item[] \textbf{Download time series of images}: The download function is designed to take the data frame from the search function and selects the SceneID creating a list of web address of EarthExplorer platform and downloading the images. The download procedure is done starting a user session with curl library, and performing the download with the EarthExplorer addresses. 
+\end{itemize}
+\subsection{Modis images download}
+Nasa Inventory is a downloads dedicated platform, this means that there is no need of scraping techniques for automatize the downloads. The platform implements a simple API where all Modis products can be search. The response of the search its a list of web addresses where the images can be downloaded directly. For automatize the download of Modis images 2 functions have been developed, one to perform the search and get the download list from Nasa Invetory and other one to perform the downloads. 
+The search is performed taking the Nasa Inventory root web address and adding different search attributes. This are the more important attributes for perform the search query in Nasa Inventory:
+\begin{itemize}
+	\item[] \textbf{product}: All Modis publised images are products. The products can be raw images or pre-processed images. In the search the product need to be specified (i.e. MOD09A1, MOD13Q1, MYD11A2, \ldots).
+	\item[] \textbf{version}: Modis pre-processes all images before publish, and the algorithm for pre-process change once in a while, the las algorithm is version 006, but previous versions can be download too.
+	\item[] \textbf{bbox}: the spatial location is defined with a bounding box with the extension of the spatial region in latitude/longitude coordinates.
+	\item[] \textbf{julianrange}: the temporal range is with Julian dates, if years are not defined the platforms create a list with all years
+	\item[] \textbf{years}: the year range to search. It is mandatory to used with julianrange attribute.
+\end{itemize}
+%ejemplo de respuesta xml ya veremos...
+The search function uses these attributes to get the download list from Nasa Inventory. It uses \textit{curl} library to perform the query and get the XML response. The \textit{XML} library is use to extract all download addresses and create download list. Nasa Inventory do not need any user account to perform the search but it is necessary for download images. The download function implements the login of a user account and download all the images in the list created by Modis search function.
+
+
+\subsection{Sentinel images download}
+Sentinel-2 is newest satellite program that publish images freely and from the all earth surface, and has the newest download platform. SciHub platform support OpenSearch and OpenData query types for search in Sentinel data base. The functions created for searches uses OpenSearch standard. OpenSearch is similar to Nasa Inventory, some attributes are defined and added to the web address or URL for query creation, and the search is perform using \textit{curl} library and using HTTP protocol. SciHub API have much more attributes than Nasa Inventory to perform the searches because is an API designed using all the data base of Sentinel publishing platform. The function to search created in R, uses only 4 attributes for perform the searches, the attributes are the following:
+\begin{itemize}
+	\item[] \textbf{platform}: Sentinel is a huge project with 5 satellite programs, this attribute refers to Sentinel program can be Sentinel-1, Sentinel-2, \ldots
+	\item[] \textbf{product}: Sentinel-2 provides different levels of processing or different products, the options for Sentinel-2 are SLC, OLCI, SLSTR, \ldots
+	\item[] \textbf{ingestiondate}: the temporal range specifying the both, start date and end date.
+	\item[] \textbf{intersects}: the spatial location is defined by and spatial polygon defining the target area, does not have to be a bounding box, can be a polygon or region.
+\end{itemize}
+The main problem of SciHub API is that the queries have a response limit, and the limit is 100 images. If the region target is too high or the time period is too long, the response may omit some images. It is recommended to use sort time periods or small areas to perform queries to the API.
+
+For download Sentinel-2 images, 2 functions have been developed, one for search and the other for download. The search function uses \textit{curl} library for perform the search query and \textit{rjson} library for download list creation. 
+The response to the query is a text file in json data format. The In R json formats can easily read using \textit{fromJSON} function in rjson library. 
+This function transform json data format to R data frame where the list of images and its meta data can be extracted. 
+The download is done creating a user session and downloading with \textit{curl}. Even if each platform have some differences the use of the same connection library makes that all procedures have the same development.
+%https://scihub.copernicus.eu/twiki/do/view/SciHubUserGuide/BatchScripting?redirectedfrom=SciHubUserGuide.8BatchScripting
+%Scraping para EE
+%landsat busquedas en ficheros xml
+
+%llamadas curl (librerias de R: curl y Rcurl) how to do
+%login
+%download
+
+
+\section{Standardize satellite imagery data}
+\label{Chap1_sec:standardize_data}
+The image file format used by each satellite program is different, see Table \ref{table:satellitecomp}, Modis satellites use hdf, LandSat use tif, and Sentinel-2 uses jp2 or JPEG2000. Depending on the need of each satellite, the program selects the format that fulfil its requirements. For example, not all Sentinel satellite use the same image format, Sentinel-2 images are huge and the images are publish in JPEG2000 because allows compression and huge images, but Sentinel-1 satellites uses tif format. 
+One formats is not better than other because all are Geographic Information System (GIS) formats. These type of data always contains two parts, the observations in the image and the coordinate system information. 
+The coordinate system is the element that defines the observations are spread in the earth surface, and is composed by at least 3 elements, coordinates reference, extent, and image resolution. Coordinate reference defines what is the projection of the image. The extent define the coordinates of the boundaries in the image. The image resolution defines the size of the pixel, can be meters, kilometres, grades\ldots , the unit is defined in coordinate reference.  It is very important to define correctly the coordinate system because is used in any analysis or works, very useful for overlaying data layers from different sources.
+
+When an image is loaded in a GIS environment the system loads both, image and the coordinate system. R can be used as GIS environment just using 3 packages from cran repository: raster, rgdal and gdalUtils. 
+
+\subsection{Raster package}
+Raster package is the R library that allow load images with coordinate system. The library have been optimized to allow hard drive processing. This means that R can process images directly from the hard drive, without load to the Random Access Memory (RAM). The process of load an image into R environment can be done with only 3 functions: raster, stack and brick. 
+\begin{itemize}
+	\item[] \textbf{raster}: loads one image with only one layer, by default the image is referenced in the hard drive and proceedings run in the hard drive.
+	\item[] \textbf{stack}: loads a group of images with one or more layers, by default the image is referenced in the hard drive and proceedings run in the hard drive.
+	\item[] \textbf{brick}: loads a group of images with one or more layers, but loads all the data into the RAM, is faster in processing but may be a lack of RAM problem in computer with little RAM.
+\end{itemize}
+%codigo de pantalla de raster con su projeccion
+
+The hard drive processing is an important characteristics because satellite images usually have huge among of data, and may be impossible to load the whole images into the RAM. The package it is able to run in the hard drive some basic GIS functions like crop, merge, or projectRaster.  
+\begin{itemize}
+	\item[] \textbf{projectRaster}: it is an important function because operations between rasters only can be run if the images has the same coordinate system. R is able to change the coordinate system of an image and transform the data to new projection using this function. In one unique operation can change the coordinate reference and image resolution.
+	\item[] \textbf{crop}: an image may have data out of your target area, this function is used to crop images and remove data that will not be used in you analysis.
+	\item[] \textbf{merge/mosaic}: this two function are used for merge a set of images, merge only accepts images that they do not overlap, mosaic instead may merge images that overlaps. Any set of images you want to merge need to have the same coordinate system a image resolution.
+\end{itemize}
+
+This operations are really necessary because R only accepts operations with images that have the same characteristics, so before any analyse of time series of satellite images it is necessary to standardise the time series to same coordinate reference and size. 
+
+
+
+\subsection{rgdal and gdalUtils packages}
+Raster package is a powerful tool but is not able to load all satellite imagery data formats. hdf and jp2 format of Modis and Sentinel-2 respectively cannot be loaded using raster package. In such cases, the library that implements almost all image file format is GDAL. 
+Geospatial Data Abstraction Library (GDAL) is an open source library for raster and vector geospatial data formats. Almost all modern GIS environments use gdal library in any part of the environment and has been ported to lots of programming languages including R. GDAL Supports 155 raster formats and 95 vectorial formats. There are 2 packages to use GDAL in R, rgdal, that is a native implementation of GDAL and gdalUtils, that is an interface between R and the library in its C programming language version.
+
+\begin{itemize}
+	\item[] \textbf{rgdal}: rgdal is a native implementation of GDAL library for load and save satellite images. The library is focused in load satellite images and create raster or vectorial object in R. Do not support as many formats as GDAL native C implementation, for example, HDF-EOS format used by Modis satellites is not supported by rgdal. Another example is jp2 that was not supported until February of 2018. 
+	\item[] \textbf{gdalUtils}: this library works as interface between R and the C implementation of GDAL. To use the library you need to have the system GDAL binary installed somewhere. The function in R they will run a system instruction with GDAL. When a function of gdalUtils is ran, the data in the image is not loaded to R environment, but the function can cut, merge, or change the format in the system directly and then use raster function.  
+\end{itemize}
+
+
+
+\subsection{Automatic procedure for standardize data}
+%Automatize the download of satellite images is important to create time series of satellite images, but is much more important standardize the data. 
+
+The procedure to create time series of satellite images is a important task to prepare the data before the analysis. Even so, in R to analyse time series of satellite images, the input images need to have the same format, size and projection. When a target region is define, can be a entire country or a region in a country.  It is important for the analysis to have the entire region in a unique image. But satellites capturing the earth surface they do it in an automatic way and divided the earth in tiles and without taking into account the regions or countries. If this happens it is necessary to merge all the tiles for each periods in the time series.
+Another possibility is that the target region appear only in a part of the image, and in this case its recommended extract the region to save resources of the computer. 
+Furthermore, for some statistical analysis from computer processing view, the calculation of distance is easier in some projections than others. For example, UTM projections shows the the distances in meters or kilometres without earth surface deformation, in contrast to latitude/longitude.  
+For all this, it is mandatory to standardize all the time series cropping and merging all images in the same periods to use correctly the data in the satellite images. 
+
+The procedure to standardize the data may intensive in terms of computing, so another automatic process has been developed. The procedure has three main parts the first one to changes the coordinate system and the image format, the second part to crop the region from images, and third part to merge chunks if the region appear in more than one image for the same day.
+
+\begin{enumerate}
+	\item Changes the coordinate system and image format: when an image is downloaded used to be compressed, so the first action of the automatic procedure is extract all the layers from the tile. Then the procedure changes the projection to one defined by the user, usually an UTM one to get the image without deformation. Finally the transformed image is saved in a user defined format. This procedure is different for each satellite because Modis or Sentinel images cannot be loaded with rgdal library and need to be transform with gdalUtils.
+	%
+	\item Crop the region:  automatic download procedure only download images of the target region, this means that at least a fragment of the region will appear in all downloaded images. The procedure with the extension of the target region automatically extracts the part of the region in each image.  
+	\item Merge chunks: the standardize procedure automatically reads the date of all images and merges only the images with the same date, creating for each period an image of a region. If there is only one image in a day period the merging process is omitted.  % if exists
+\end{enumerate}
+
+%\section{Spatio-temporal models for disease mapping}
+%\label{Chap1_sec:ST_models}
+%A wide range of spatio-temporal models for disease mapping have been proposed in the literature, most of them based on CAR models extending the well known BYM model \citep{besag1991bayesian}. In this section two models with parametric time trends and a battery of non-parametric models including different types of space-time interactions \citep{held2000bayesian} will be described.
+%
+%Suppose that the region under study is divided into $n$ small areas labelled as $i=1,\ldots,n$. For each area $i$, data are available for different time periods labelled by $t=1,\ldots,T$. Then, conditional on the relative risk $r_{it}$, the number of counts $O_{it}$ is assumed to be Poisson distributed with mean $\mu_{it}=e_{it}r_{it}$, where $e_{it}$ is the number of expected cases for area $i$ and time $t$. That is
+%\begin{eqnarray*}
+%\label{eq:PoissonST}
+%\begin{array}{rcl}
+%O_{it}|r_{it} & \sim & Poisson(\mu_{it}=e_{it}r_{it}), \\[1ex]  %\quad  \mbox{for} \quad  i=1,\ldots,n \mbox{ ; } t=1,\ldots,T,\\
+%\log(\mu_{it}) & = & \log(e_{it})+\log(r_{it}).
+%\end{array}
+%\end{eqnarray*}
+%Here, $\log(e_{it})$ is an offset and depending on the specification of $\log(r_{it})$ different models are defined.

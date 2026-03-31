@@ -1,0 +1,56 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Code for creating empty pages                 %
+% No headers on empty pages before new chapter  %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\makeatletter
+\makeindex
+\def\cleardoublepage{\clearpage\if@twoside \ifodd\c@page\else
+    \hbox{}
+    \thispagestyle{plain}
+    \newpage
+    \if@twocolumn\hbox{}\newpage\fi\fi\fi}
+\makeatother \clearpage{\pagestyle{plain}\cleardoublepage}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Code for creating chapter 1st page            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pagestyle{fancy}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+\fancyhf{}
+
+\newcommand{\changefont}{%
+    \fontsize{11.5}{11}\selectfont
+}
+
+\fancyhead[LE,RO]{\changefont\bfseries\thepage}
+\fancyhead[LO]{\changefont\bfseries\rightmark}
+\fancyhead[RE]{\changefont\bfseries\leftmark}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0pt}
+\addtolength{\headheight}{0.5pt}
+\setlength{\footskip}{0in}
+\renewcommand{\footruleskip}{0pt}
+\fancypagestyle{plain}{%
+\fancyhead{}
+\renewcommand{\headrulewidth}{0pt}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Appendix captiion style                     %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%figures
+\makeatletter
+\g@addto@macro\appendix{\renewcommand{\thefigure}{\letraanexo\arabic{figure}}\setcounter{figure}{0}}
+\makeatother
+
+%tables
+\makeatletter
+\g@addto@macro\appendix{\renewcommand{\thetable}{\letraanexo\arabic{table}}\setcounter{table}{0}}
+\makeatother
+
+%codes
+\makeatletter
+\g@addto@macro\appendix{\renewcommand{\thelstlisting}{\letraanexo\arabic{lstlisting}}\setcounter{lstlisting}{0}}
+\makeatother
