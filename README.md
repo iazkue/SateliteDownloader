@@ -39,17 +39,21 @@ This project was developed as a Final Degree Project (TFG).
    Ensure you have a `config.yml` at the root folder for Dropwizard (HTTP and Database configs) and any necessary environment variables or `.env` files for properties (`COPERNICUS_PREVIEW_FOLDER`, etc.).
 
 3. **Build the Application**:
-   Use Gradle to compile and build the shadowed JAR:
+   Use Gradle to compile and build the shadowed fat JAR (inclusive of dependencies):
    ```bash
-   ./gradlew clean build
+   ./gradlew clean build shadowJar
    ```
 
 ## Running the Application
 
-To run the server locally:
-
+To run the server quickly for local development:
 ```bash
-java -jar build/libs/SateliteDownloader-all.jar server config.yml
+./gradlew run
+```
+
+To run the packaged portable application:
+```bash
+java -jar build/libs/SateliteDownloader-1.0-SNAPSHOT-all.jar server config.yml
 ```
 
 The application will start the Dropwizard server and HTTP endpoints will become available. By default, Dropwizard listens on port `8080`.
