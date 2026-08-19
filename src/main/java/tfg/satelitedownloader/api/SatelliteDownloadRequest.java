@@ -56,12 +56,24 @@ public class SatelliteDownloadRequest {
         return iday;
     }
 
+    public void setInitialDay(String initialDay) {
+        this.iday = initialDay;
+    }
+
     public String getFinalDay() {
         return fday;
     }
 
+    public void setFinalDay(String finalDay) {
+        this.fday = finalDay;
+    }
+
     public String getGeoJson() {
         return geojson;
+    }
+
+    public void setGeoJson(String geoJson) {
+        this.geojson = geoJson;
     }
 
     private java.util.List<String> selectedImages;

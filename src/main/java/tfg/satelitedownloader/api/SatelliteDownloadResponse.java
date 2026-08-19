@@ -49,6 +49,10 @@ public class SatelliteDownloadResponse {
         return tilesFound;
     }
 
+    public int getPreviewsDownloaded() {
+        return tilesFound;
+    }
+
     public void setTilesFound(int tilesFound) {
         this.tilesFound = tilesFound;
     }
