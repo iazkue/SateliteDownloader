@@ -76,6 +76,16 @@ public class SatelliteDownloadRequest {
         this.geojson = geoJson;
     }
 
+    private String taskId;
+
+    public String getTaskId() {
+        return taskId;
+    }
+
+    public void setTaskId(String taskId) {
+        this.taskId = taskId;
+    }
+
     private java.util.List<String> selectedImages;
 
     public java.util.List<String> getSelectedImages() {
@@ -89,7 +99,8 @@ public class SatelliteDownloadRequest {
     @Override
     public String toString() {
         return "SatelliteDownloadRequest{" +
-                "iday='" + iday + '\'' +
+                "taskId='" + taskId + '\'' +
+                ", iday='" + iday + '\'' +
                 ", fday='" + fday + '\'' +
                 ", geojson='" + geojson + '\'' +
                 ", selectedImages=" + selectedImages +

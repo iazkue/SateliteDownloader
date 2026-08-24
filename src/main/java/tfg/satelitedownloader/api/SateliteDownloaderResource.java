@@ -71,7 +71,6 @@ public class SateliteDownloaderResource {
     @UnitOfWork
     public Response downloadImages(SatelliteDownloadRequest request) {
         try {
-            // Validate request
             if (request == null) {
                 SatelliteDownloadResponse errorResponse = new SatelliteDownloadResponse(
                         "error", "Request body is required");
@@ -86,17 +85,20 @@ public class SateliteDownloaderResource {
 
             LOGGER.info("Processing satellite download request: " + request.toString());
 
+            int count = request.getSelectedImages() != null ? request.getSelectedImages().size() : 1;
+            tfg.satelitedownloader.model.SatelliteDownloadTask task =
+                    tfg.satelitedownloader.service.DownloadQueueManager.getInstance().createTask(
+                            request.getInitialDay(),
+                            request.getFinalDay(),
+                            count
+                    );
+            request.setTaskId(task.getTaskId());
+
             // Add the request to the queue (Producer)
             queue.put(request);
 
-            SatelliteDownloadResponse response = new SatelliteDownloadResponse(
-                    "success",
-                    "Satellite download request added to queue for background processing",
-                    0,
-                    null);
-
-            LOGGER.info("Satellite download queued successfully");
-            return Response.ok(response).build();
+            LOGGER.info("Satellite download queued successfully with taskId: " + task.getTaskId());
+            return Response.ok(task).build();
 
         } catch (InterruptedException e) {
             LOGGER.log(Level.SEVERE, "Error processing satellite download", e);
@@ -116,50 +118,43 @@ public class SateliteDownloaderResource {
         }
     }
 
+    @GET
+    @Path("/downloadQueue")
+    public Response getDownloadQueue() {
+        List<tfg.satelitedownloader.model.SatelliteDownloadTask> tasks =
+                tfg.satelitedownloader.service.DownloadQueueManager.getInstance().getAllTasks();
+        return Response.ok(tasks).build();
+    }
+
+    @POST
+    @Path("/cancelDownload/{taskId}")
+    public Response cancelDownload(@PathParam("taskId") String taskId) {
+        tfg.satelitedownloader.service.DownloadQueueManager.getInstance().cancelTask(taskId);
+        return Response.ok("{\"status\":\"success\",\"message\":\"Task cancelled\"}").build();
+    }
+
     @POST
     @Path("/downloadPreviews")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public Response downloadPreviews(SatelliteDownloadRequest request) {
-        try {
-            // Validate request
-            if (request == null) {
-                SatelliteDownloadResponse errorResponse = new SatelliteDownloadResponse(
-                        "error", "Request body is required");
-                return Response.status(Response.Status.BAD_REQUEST).entity(errorResponse).build();
-            }
-
-            if (request.getInitialDay() == null || request.getFinalDay() == null || request.getGeoJson() == null) {
-                SatelliteDownloadResponse errorResponse = new SatelliteDownloadResponse(
-                        "error", "All fields (iday, fday, geojson) are required");
-                return Response.status(Response.Status.BAD_REQUEST).entity(errorResponse).build();
-            }
-
-            LOGGER.info("Processing preview download request: " + request.toString());
-
-            // Execute the preview download logic
-            SatelliteDownloadResponse response = executePreviewDownloadLogic(
-                    request.getInitialDay(),
-                    request.getFinalDay(),
-                    request.getGeoJson().toString());
-
-            LOGGER.info("Preview download completed successfully");
-            return Response.ok(response).build();
-
-        } catch (IOException | InterruptedException e) {
-            LOGGER.log(Level.SEVERE, "Error processing preview download", e);
-            SatelliteDownloadResponse errorResponse = new SatelliteDownloadResponse(
-                    "error", "Failed to download previews: " + e.getMessage());
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(errorResponse).build();
-        } catch (IllegalArgumentException e) {
-            LOGGER.log(Level.WARNING, "Invalid request parameters", e);
-            SatelliteDownloadResponse errorResponse = new SatelliteDownloadResponse(
-                    "error", "Invalid request parameters: " + e.getMessage());
-            return Response.status(Response.Status.BAD_REQUEST).entity(errorResponse).build();
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Unexpected error processing preview download", e);
-            SatelliteDownloadResponse errorResponse = new SatelliteDownloadResponse(
-                    "error", "An unexpected error occurred: " + e.getMessage());
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(errorResponse).build();
+        if (request == null || request.getInitialDay() == null || request.getFinalDay() == null || request.getGeoJson() == null) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("{\"status\":\"error\",\"message\":\"Missing required fields\"}\n").build();
         }
+
+        LOGGER.info("Processing preview download request stream: " + request.toString());
+
+        jakarta.ws.rs.core.StreamingOutput stream = output -> {
+            java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.OutputStreamWriter(output, java.nio.charset.StandardCharsets.UTF_8), true);
+            try {
+                executePreviewDownloadStream(request.getInitialDay(), request.getFinalDay(), request.getGeoJson().toString(), writer);
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Error in streaming preview download", e);
+                writer.println("{\"status\":\"error\",\"message\":\"" + e.getMessage().replace("\"", "\\\"") + "\"}");
+                writer.flush();
+            }
+        };
+
+        return Response.ok(stream).build();
     }
 
     @GET
@@ -180,107 +175,60 @@ public class SateliteDownloaderResource {
     }
 
     /**
-     * Executes the preview download logic - searches for tiles and downloads their
-     * preview images
+     * Executes preview download with stream updates (NDJSON chunks)
      */
-    private SatelliteDownloadResponse executePreviewDownloadLogic(String iday, String fday, String geojsonString)
-            throws IOException, InterruptedException {
+    private void executePreviewDownloadStream(String iday, String fday, String geojsonString, java.io.PrintWriter writer) throws Exception {
+        writer.println("{\"status\":\"searching\",\"message\":\"Buscando imágenes satelitales...\"}");
+        writer.flush();
 
-        int option = 1; // Default to Copernicus
-        Provider tileProvider;
-        String name = "";
-        String dateStart = "";
-        String dateEnd = "";
-        String area = "";
+        String dateStart = iday.contains("T") ? iday : iday + "T00:00:00.000Z";
+        String dateEnd = fday.contains("T") ? fday : fday + "T00:00:00.000Z";
+        String area = GeoJsonConverter.convertToWKT(geojsonString);
 
-        // Set the dates from the request
-        dateStart = iday;
-        dateEnd = fday;
+        List<Tile> tiles = copernicusProvider.getTile("SENTINEL-2", dateStart, dateEnd, area);
 
-        switch (option) {
-            case 1 -> {
-                tileProvider = copernicusProvider;
-                name = "SENTINEL-2";
-                // Convert dates to proper format if needed
-                if (!dateStart.contains("T")) {
-                    dateStart = dateStart + "T00:00:00.000Z";
-                }
-                if (!dateEnd.contains("T")) {
-                    dateEnd = dateEnd + "T00:00:00.000Z";
-                }
-                // Convert GeoJSON to WKT format for Copernicus
-                area = GeoJsonConverter.convertToWKT(geojsonString);
-            }
-            case 2 -> {
-                tileProvider = new LandsatProvider();
-                name = "Global Land Survey";
-                // Convert GeoJSON to bounding box format for Landsat
-                area = GeoJsonConverter.convertToBoundingBox(geojsonString);
-            }
-            case 3 -> {
-                tileProvider = new ModisProvider();
-                // Convert GeoJSON to bounding box format for MODIS
-                area = GeoJsonConverter.convertToBoundingBox(geojsonString);
-            }
-            default -> throw new IllegalArgumentException("Invalid option");
+        if (tiles == null || tiles.isEmpty()) {
+            writer.println("{\"status\":\"completed\",\"previewsDownloaded\":0,\"total\":0,\"previewImages\":[],\"message\":\"No se encontraron imágenes.\"}");
+            writer.flush();
+            return;
         }
 
-        // Search for tiles
-        List<Tile> tiles = tileProvider.getTile(name, dateStart, dateEnd, area);
+        int total = tiles.size();
+        writer.println("{\"status\":\"found\",\"total\":" + total + ",\"message\":\"Encontradas " + total + " imágenes. Descargando previews...\"}");
+        writer.flush();
 
-        if (tiles.isEmpty()) {
-            return new SatelliteDownloadResponse("success", "No tiles found for the specified criteria", 0, null);
-        }
+        String previewsFolder = propsReader.get("COPERNICUS_PREVIEW_FOLDER");
+        if (previewsFolder == null) previewsFolder = "imagesPreviewFolder";
+        List<String> previewImages = new ArrayList<>();
+        String accessToken = copernicusProvider.getAccessToken();
 
-        // Download preview for each Copernicus tile
-        if (tileProvider instanceof CopernicusProvider) {
-            int previewsDownloaded = 0;
-            String previewsFolder = propsReader.get("COPERNICUS_PREVIEW_FOLDER");
-            List<String> previewImages = new ArrayList<>();
-
-            // Get access token for preview downloads
-            String accessToken = null;
-            try {
-                accessToken = ((CopernicusProvider) tileProvider).getAccessToken();
-            } catch (IOException | InterruptedException e) {
-                LOGGER.log(Level.WARNING, "Failed to obtain access token for previews: " + e.getMessage(), e);
-                return new SatelliteDownloadResponse("error", "Failed to obtain access token: " + e.getMessage());
-            }
-
-            for (Tile tile : tiles) {
-                if (tile instanceof CopernicusTile) {
-                    CopernicusTile cTile = (CopernicusTile) tile;
-                    String previewLink = cTile.getPreviewLink();
-
-                    if (previewLink != null && !previewLink.isEmpty()) {
-                        try {
-                            String filename = cTile.getName() + "_preview.png";
-                            String outputPath = previewsFolder + "/" + filename;
-                            ((CopernicusProvider) tileProvider).downloadPreviewImage(previewLink, accessToken,
-                                    outputPath);
-                            previewsDownloaded++;
-                            previewImages.add(filename);
-                            LOGGER.info("Preview downloaded for tile: " + cTile.getName());
-                        } catch (Exception e) {
-                            LOGGER.log(Level.WARNING, "Failed to download preview for tile: " + cTile.getName(), e);
-                        }
+        int downloaded = 0;
+        for (int i = 0; i < tiles.size(); i++) {
+            Tile tile = tiles.get(i);
+            if (tile instanceof CopernicusTile cTile) {
+                String previewLink = cTile.getPreviewLink();
+                if (previewLink != null && !previewLink.isEmpty()) {
+                    String filename = cTile.getName() + "_preview.png";
+                    String outputPath = previewsFolder + "/" + filename;
+                    try {
+                        copernicusProvider.downloadPreviewImage(previewLink, accessToken, outputPath);
+                        downloaded++;
+                        previewImages.add(filename);
+                    } catch (Exception e) {
+                        LOGGER.log(Level.WARNING, "Failed to download preview for tile: " + cTile.getName(), e);
                     }
                 }
             }
 
-            SatelliteDownloadResponse resp = new SatelliteDownloadResponse(
-                    "success",
-                    "Preview downloads completed",
-                    previewsDownloaded,
-                    "Downloaded " + previewsDownloaded + " out of " + tiles.size() + " preview images");
-            resp.setPreviewImages(previewImages);
-            return resp;
+            int percent = Math.min(100, (int) (((i + 1) / (double) total) * 100));
+            String msg = "Descargando preview " + (i + 1) + " de " + total + " (" + percent + "%)";
+            writer.println("{\"status\":\"progress\",\"current\":" + (i + 1) + ",\"total\":" + total + ",\"percent\":" + percent + ",\"message\":\"" + msg + "\"}");
+            writer.flush();
         }
 
-        return new SatelliteDownloadResponse(
-                "success",
-                "Preview download not supported for this provider",
-                0,
-                null);
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        String imagesJson = mapper.writeValueAsString(previewImages);
+        writer.println("{\"status\":\"completed\",\"previewsDownloaded\":" + downloaded + ",\"total\":" + total + ",\"previewImages\":" + imagesJson + ",\"message\":\"Vistas previas cargadas correctamente.\"}");
+        writer.flush();
     }
 }

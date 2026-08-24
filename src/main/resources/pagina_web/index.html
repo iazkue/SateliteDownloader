@@ -45,7 +45,7 @@
             <div class="col-9 p-0">
                 <div id="map"></div>
             </div>
-            <div class="col-3 p-3 pl-0  bg-light">
+            <div class="col-3 p-3 pl-0 bg-light sidebar-panel">
                 <h2>Enter Search Parameters</h2>
                 <br>
                 <!-- Aqui definimos el endpoint del api al que se va a connectar, modifica action por el endpoint adecuado -->
@@ -89,7 +89,6 @@
                         </div>
 
                     </fieldset>
-                    <br>
                     <fieldset class="border p-2">
                         <legend class="float-none w-auto p-2 h4">Select date range</legend>
                         <ol>
@@ -100,25 +99,46 @@
                         </ol>
                     </fieldset>
                     <br>
-                    <br>
-                    <br>
-                    <div class="row justify-content-center">
-                        <div class="d-grid gap-2 col-6 mx-auto">
-                            <button type="button" class="btn btn-outline-primary" id="preview-btn"
+                    <div class="justify-content-center">
+                        <div class="d-grid gap-2 col-10 mx-auto text-center">
+                            <button type="button" class="btn btn-outline-primary fw-bold py-2" id="preview-btn"
                                 disabled>Preview</button>
+                            <div id="preview-progress-ui"
+                                class="d-none w-100 mt-2 p-2 border rounded bg-white shadow-sm">
+                                <div class="progress mb-2" style="height: 22px;">
+                                    <div id="preview-progress-bar"
+                                        class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                                        role="progressbar" style="width: 0%;">0%</div>
+                                </div>
+                                <small id="preview-progress-text"
+                                    class="text-muted d-block mb-2 font-monospace">Searching for images...</small>
+                                <button type="button" class="btn btn-sm btn-outline-danger w-100"
+                                    id="cancel-preview-btn">Cancel Preview</button>
+                            </div>
                         </div>
                     </div>
                     <br>
-                    <div class="row justify-content-center">
+                    <div class="justify-content-center">
                         <div id="preview-container" class="col-12"
                             style="display:none; max-height: 400px; overflow-y: auto; text-align: center;">
                             <!-- Previews injected here -->
                         </div>
                     </div>
-                    <div class="row justify-content-center">
-                        <div class="d-grid gap-2 col-6 mx-auto">
-                            <button type="button" class="btn btn-outline-success" id="post-btn"
-                                disabled>Download</button>
+                    <div class="justify-content-center mt-3">
+                        <div class="d-grid gap-2 col-10 mx-auto text-center">
+                            <button type="button" class="btn btn-outline-success fw-bold py-2" id="post-btn"
+                                disabled>Download Selection</button>
+                        </div>
+                    </div>
+                    <!-- Download Queue Section -->
+                    <div id="download-queue-section" class="mt-4 p-3 border rounded bg-white shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="m-0 fw-bold text-dark">Download Queue</h6>
+                            <span id="queue-badge" class="badge bg-primary rounded-pill">0 activas</span>
+                        </div>
+                        <div id="queue-task-list" class="d-flex flex-column gap-2"
+                            style="max-height: 320px; overflow-y: auto;">
+                            <!-- Task cards dynamically rendered -->
                         </div>
                     </div>
                 </form>

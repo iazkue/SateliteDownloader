@@ -58,8 +58,8 @@ public class SateliteDownloaderResourceTest {
 
         assertEquals(200, response.getStatus());
         assertEquals(1, queue.size()); // Item should be in the queue
-        SatelliteDownloadResponse sdr = response.readEntity(SatelliteDownloadResponse.class);
-        assertEquals("success", sdr.getStatus());
+        tfg.satelitedownloader.model.SatelliteDownloadTask task = response.readEntity(tfg.satelitedownloader.model.SatelliteDownloadTask.class);
+        assertEquals("QUEUED", task.getStatus());
     }
 
     @Test
@@ -95,9 +95,9 @@ public class SateliteDownloaderResourceTest {
                 .post(Entity.entity(req, MediaType.APPLICATION_JSON));
 
         assertEquals(200, response.getStatus());
-        SatelliteDownloadResponse sdr = response.readEntity(SatelliteDownloadResponse.class);
-        assertEquals("success", sdr.getStatus());
-        assertEquals(1, sdr.getPreviewsDownloaded());
+        String streamOutput = response.readEntity(String.class);
+        org.junit.jupiter.api.Assertions.assertTrue(streamOutput.contains("\"status\":\"completed\""));
+        org.junit.jupiter.api.Assertions.assertTrue(streamOutput.contains("TILE_1_preview.png"));
         verify(provider, times(1)).downloadPreviewImage(eq("http://preview.link"), eq("fake-access-token"),
                 anyString());
     }

@@ -160,238 +160,317 @@ var y = document.getElementById('f');
     cloudCover = this.value;
 }*/
 
-//Submit button controls
-const button_submit = document.getElementById('post-btn');
-console.log('Button element found:', button_submit);
+// Download Queue Management
+let queuePollInterval = null;
 
-if (button_submit) {
-  console.log('Adding click listener to submit button');
-  button_submit.addEventListener('click', async (event) => {
-    event.preventDefault(); // Prevent default form submission
+function startQueuePolling() {
+  if (!queuePollInterval) {
+    queuePollInterval = setInterval(fetchAndUpdateQueue, 1000);
+  }
+}
 
-    console.log('Submit button clicked!');
-    console.log('initDay:', initDay);
-    console.log('endDay:', endDay);
-    console.log('geoJasonArea:', geoJasonArea);
-    console.log('area:', area);
+async function fetchAndUpdateQueue() {
+  try {
+    const response = await fetch('/api/downloadQueue');
+    if (!response.ok) return;
+    const tasks = await response.json();
+    renderDownloadQueue(tasks);
+  } catch (e) {
+    console.error('Error fetching download queue:', e);
+  }
+}
 
-    try {
-      // Check if area is too large
-      if (area >= max_area) {
-        msg =
-          'The selected area is too large\n' +
-          'Please select an area under 50000 km\u00B2';
-        window.alert(msg);
-        return;
-      }
+function renderDownloadQueue(tasks) {
+  const queueSection = document.getElementById('download-queue-section');
+  const queueList = document.getElementById('queue-task-list');
+  const queueBadge = document.getElementById('queue-badge');
 
-      // Validate inputs
-      if (!initDay || !endDay || !geoJasonArea) {
-        alert("Please select both a date range and a region of interest.");
-        return;
-      }
+  if (!queueSection || !queueList) return;
 
-      // Prepare the data to send (matching backend field names)
-      const selectedImages = [];
-      const checkboxes = document.querySelectorAll('.preview-checkbox');
-      if (checkboxes.length > 0) {
-        checkboxes.forEach(cb => {
-          if (cb.checked) {
-            selectedImages.push(cb.value);
-          }
-        });
-      }
+  queueSection.style.display = 'block';
 
-      const requestData = {
-        iday: initDay,
-        fday: endDay,
-        geojson: JSON.stringify(geoJasonArea), // Convert object to string
-        selectedImages: selectedImages
-      };
+  if (!tasks || tasks.length === 0) {
+    if (queueBadge) {
+      queueBadge.textContent = '0 activas';
+    }
+    queueList.innerHTML = '<p class="text-muted text-center m-0 py-2" style="font-size: 0.85rem;">No hay descargas en la cola</p>';
+    return;
+  }
+  const activeTasks = tasks.filter(t => t.status === 'QUEUED' || t.status === 'DOWNLOADING').length;
+  if (queueBadge) {
+    queueBadge.textContent = `${activeTasks} activa(s)`;
+  }
 
-      console.log('Sending request to /api/downloadImages:', requestData);
+  // Sort tasks by taskId descending so newest is at top
+  const sortedTasks = [...tasks].sort((a, b) => b.taskId.localeCompare(a.taskId));
 
-      // Send POST request to the download endpoint
-      const response = await fetch('/api/downloadImages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
+  queueList.innerHTML = sortedTasks.map(task => {
+    let badgeClass = 'bg-secondary';
+    let badgeText = task.status;
+    let progressBarClass = 'bg-primary';
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers.get('content-type'));
-
-      // Get the response text first
-      const responseText = await response.text();
-      console.log('Response text:', responseText);
-
-      // Try to parse as JSON
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (e) {
-        console.error('Failed to parse response as JSON:', e);
-        alert(
-          'Server error: Received non-JSON response\n' +
-          responseText.substring(0, 200),
-        );
-        return;
-      }
-
-      if (response.ok) {
-        console.log('Download completed successfully!', result);
-        alert(
-          'Download request submitted successfully!\n' +
-          (result.message || 'Processing...'),
-        );
-      } else {
-        console.error('Download failed:', result);
-        alert('Download failed: ' + (result.message || 'Unknown error'));
-      }
-    } catch (err) {
-      console.error(`Error: ${err}`);
-      alert('Error submitting download request: ' + err.message);
+    if (task.status === 'QUEUED') {
+      badgeClass = 'bg-warning text-dark';
+      badgeText = 'En Cola';
+      progressBarClass = 'bg-warning';
+    } else if (task.status === 'DOWNLOADING') {
+      badgeClass = 'bg-primary';
+      badgeText = 'Descargando';
+      progressBarClass = 'bg-primary progress-bar-striped progress-bar-animated';
+    } else if (task.status === 'COMPLETED') {
+      badgeClass = 'bg-success';
+      badgeText = 'Completado';
+      progressBarClass = 'bg-success';
+    } else if (task.status === 'CANCELLED') {
+      badgeClass = 'bg-danger';
+      badgeText = 'Cancelado';
+      progressBarClass = 'bg-danger';
+    } else if (task.status === 'FAILED') {
+      badgeClass = 'bg-dark';
+      badgeText = 'Fallido';
+      progressBarClass = 'bg-dark';
     }
 
-    // Clear the selection after submission
-    document.getElementById('post-btn').disabled = true;
-    featureGroup.clearLayers();
+    const showCancel = task.status === 'QUEUED' || task.status === 'DOWNLOADING';
+    const percent = task.percent || 0;
+    const message = task.message || '';
+
+    return `
+      <div class="card p-2 border shadow-sm">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="fw-bold text-truncate" style="font-size: 0.85rem; max-width: 60%;">${task.taskId}</span>
+          <span class="badge ${badgeClass}">${badgeText}</span>
+        </div>
+        <div class="progress mb-1" style="height: 18px;">
+          <div class="progress-bar ${progressBarClass}" role="progressbar" style="width: ${percent}%;">${percent}%</div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-1">
+          <small class="text-muted text-truncate font-monospace" style="font-size: 0.75rem; max-width: 70%;">${message}</small>
+          ${showCancel ? `<button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 0.75rem;" onclick="cancelQueueTask('${task.taskId}')">Cancelar</button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function cancelQueueTask(taskId) {
+  try {
+    await fetch(`/api/cancelDownload/${taskId}`, { method: 'POST' });
+    fetchAndUpdateQueue();
+  } catch (e) {
+    console.error('Error cancelling task:', e);
+  }
+}
+window.cancelQueueTask = cancelQueueTask;
+
+// Start queue polling immediately
+startQueuePolling();
+
+// Submit button controls
+let currentPreviewController = null;
+
+const cancelPreviewBtn = document.getElementById('cancel-preview-btn');
+if (cancelPreviewBtn) {
+  cancelPreviewBtn.addEventListener('click', () => {
+    if (currentPreviewController) {
+      currentPreviewController.abort();
+    }
   });
-} else {
-  console.error('Submit button not found!');
+}
+
+const button_submit = document.getElementById('post-btn');
+if (button_submit) {
+  button_submit.addEventListener('click', async (event) => {
+    event.preventDefault();
+
+    if (area >= max_area) {
+      alert('The selected area is too large\nPlease select an area under 50000 km\u00B2');
+      return;
+    }
+
+    if (!initDay || !endDay || !geoJasonArea) {
+      alert("Please select both a date range and a region of interest.");
+      return;
+    }
+
+    const selectedImages = [];
+    const checkboxes = document.querySelectorAll('.preview-checkbox');
+    if (checkboxes.length > 0) {
+      checkboxes.forEach(cb => {
+        if (cb.checked) {
+          selectedImages.push(cb.value);
+        }
+      });
+    }
+
+    const requestData = {
+      iday: initDay,
+      fday: endDay,
+      geojson: JSON.stringify(geoJasonArea),
+      selectedImages: selectedImages
+    };
+
+    try {
+      const response = await fetch('/api/downloadImages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
+      });
+
+      if (response.ok) {
+        const task = await response.json();
+        alert('Added to download queue: ' + (task.taskId || 'Task started'));
+        startQueuePolling();
+        fetchAndUpdateQueue();
+      } else {
+        const errJson = await response.json();
+        alert('Error starting download: ' + (errJson.message || 'Server error'));
+      }
+    } catch (err) {
+      console.error('Error submitting download request:', err);
+      alert('Error submitting download request: ' + err.message);
+    }
+  });
 }
 
 // Preview button controls
 const button_preview = document.getElementById('preview-btn');
-console.log('Preview button element found:', button_preview);
-
 if (button_preview) {
-  console.log('Adding click listener to preview button');
   button_preview.addEventListener('click', async (event) => {
-    event.preventDefault(); // Prevent default form submission
+    event.preventDefault();
 
-    console.log('Preview button clicked!');
-    console.log('initDay:', initDay);
-    console.log('endDay:', endDay);
-    console.log('geoJasonArea:', geoJasonArea);
-    console.log('area:', area);
-
-    try {
-      // Check if area is too large
-      if (area >= max_area) {
-        msg =
-          'The selected area is too large\n' +
-          'Please select an area under 50000 km\u00B2';
-        window.alert(msg);
-        return;
-      }
-
-      // Validate inputs
-      if (!initDay || !endDay || !geoJasonArea) {
-        alert("Please select both a date range and a region of interest.");
-        return;
-      }
-
-      // Prepare the data to send (matching backend field names)
-      const requestData = {
-        iday: initDay,
-        fday: endDay,
-        geojson: JSON.stringify(geoJasonArea), // Convert object to string
-      };
-
-      console.log('Sending request to /api/downloadPreviews:', requestData);
-
-      // Send POST request to the preview download endpoint
-      const response = await fetch('/api/downloadPreviews', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers.get('content-type'));
-
-      // Get the response text first
-      const responseText = await response.text();
-      console.log('Response text:', responseText);
-
-      // Try to parse as JSON
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (e) {
-        console.error('Failed to parse response as JSON:', e);
-        alert(
-          'Server error: Received non-JSON response\n' +
-          responseText.substring(0, 200),
-        );
-        return;
-      }
-
-      if (response.ok) {
-        console.log('Preview download completed successfully!', result);
-
-        const previewContainer = document.getElementById('preview-container');
-        previewContainer.style.display = 'block';
-        previewContainer.innerHTML = '<h5 class="mb-3">Select the images you want to download:</h5><div class="row g-3"></div>';
-        const gallery = previewContainer.querySelector('.row');
-
-        if (result.previewImages && result.previewImages.length > 0) {
-          result.previewImages.forEach(filename => {
-            const colDiv = document.createElement('div');
-            colDiv.className = 'col-6';
-            colDiv.innerHTML = `
-                  <div class="card p-2 h-100 border-primary">
-                    <img src="/api/previews/${filename}" alt="${filename}" style="width: 100%; height: 150px; object-fit: cover;" class="mb-2 rounded">
-                    <div class="form-check text-start">
-                        <input class="form-check-input preview-checkbox" type="checkbox" value="${filename}" id="check_${filename}">
-                        <label class="form-check-label text-break" style="font-size: 0.8rem;" for="check_${filename}">
-                            ${filename}
-                        </label>
-                    </div>
-                  </div>
-                `;
-            gallery.appendChild(colDiv);
-          });
-
-          const checkboxes = document.querySelectorAll('.preview-checkbox');
-          checkboxes.forEach(cb => {
-            cb.addEventListener('change', () => {
-              const anyChecked = Array.from(checkboxes).some(c => c.checked);
-              document.getElementById('post-btn').disabled = !anyChecked;
-            });
-          });
-          document.getElementById('post-btn').disabled = true;
-        } else {
-          previewContainer.innerHTML += '<p class="text-muted">No preview images found.</p>';
-          document.getElementById('post-btn').disabled = false;
-        }
-
-        alert(
-          'Preview download request submitted successfully!\n' +
-          (result.message || 'Processing...'),
-        );
-      } else {
-        console.error('Preview download failed:', result);
-        alert(
-          'Preview download failed: ' + (result.message || 'Unknown error'),
-        );
-      }
-    } catch (err) {
-      console.error(`Error: ${err}`);
-      alert('Error submitting preview download request: ' + err.message);
+    if (area >= max_area) {
+      alert('The selected area is too large\nPlease select an area under 50000 km\u00B2');
+      return;
     }
 
-    // Clear the selection after submission
-    document.getElementById('preview-btn').disabled = true;
-    featureGroup.clearLayers();
+    if (!initDay || !endDay || !geoJasonArea) {
+      alert("Please select both a date range and a region of interest.");
+      return;
+    }
+
+    const requestData = {
+      iday: initDay,
+      fday: endDay,
+      geojson: JSON.stringify(geoJasonArea)
+    };
+
+    currentPreviewController = new AbortController();
+    button_preview.classList.add('d-none');
+
+    const previewUi = document.getElementById('preview-progress-ui');
+    const progressBar = document.getElementById('preview-progress-bar');
+    const progressText = document.getElementById('preview-progress-text');
+
+    previewUi.classList.remove('d-none');
+    progressBar.style.width = '0%';
+    progressBar.textContent = '0%';
+    progressText.textContent = 'Starting to search...';
+
+    let lastCompletedResult = null;
+
+    try {
+      const response = await fetch('/api/downloadPreviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData),
+        signal: currentPreviewController.signal
+      });
+
+      if (!response.ok) {
+        throw new Error('Error en el servidor: ' + response.statusText);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // save remainder
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const data = JSON.parse(line);
+            if (data.status === 'searching' || data.status === 'found') {
+              progressText.textContent = data.message;
+            } else if (data.status === 'progress') {
+              progressBar.style.width = data.percent + '%';
+              progressBar.textContent = data.percent + '%';
+              progressText.textContent = data.message;
+            } else if (data.status === 'completed') {
+              progressBar.style.width = '100%';
+              progressBar.textContent = '100%';
+              progressText.textContent = 'Vistas previas cargadas';
+              lastCompletedResult = data;
+            } else if (data.status === 'error') {
+              throw new Error(data.message);
+            }
+          } catch (err) {
+            console.error('Error parsing stream chunk:', err, line);
+          }
+        }
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        console.log('Preview request cancelled');
+        progressText.textContent = 'Preview cancelado.';
+      } else {
+        console.error('Error in preview stream:', err);
+        alert('Error descargando preview: ' + err.message);
+      }
+    } finally {
+      button_preview.classList.remove('d-none');
+      previewUi.classList.add('d-none');
+    }
+
+    if (lastCompletedResult) {
+      displayPreviews(lastCompletedResult);
+    }
   });
-} else {
-  console.error('Preview button not found!');
+}
+
+function displayPreviews(result) {
+  const previewContainer = document.getElementById('preview-container');
+  previewContainer.style.display = 'block';
+  previewContainer.innerHTML = '<h5 class="mb-3">Select images to download:</h5><div class="row g-3"></div>';
+  const gallery = previewContainer.querySelector('.row');
+
+  if (result.previewImages && result.previewImages.length > 0) {
+    result.previewImages.forEach(filename => {
+      const colDiv = document.createElement('div');
+      colDiv.className = 'col-6';
+      colDiv.innerHTML = `
+        <div class="card p-2 h-100 border-primary">
+          <img src="/api/previews/${filename}" alt="${filename}" style="width: 100%; height: 150px; object-fit: cover;" class="mb-2 rounded">
+          <div class="form-check text-start">
+              <input class="form-check-input preview-checkbox" type="checkbox" value="${filename}" id="check_${filename}">
+              <label class="form-check-label text-break" style="font-size: 0.8rem;" for="check_${filename}">
+                  ${filename}
+              </label>
+          </div>
+        </div>
+      `;
+      gallery.appendChild(colDiv);
+    });
+
+    const checkboxes = document.querySelectorAll('.preview-checkbox');
+    checkboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        const anyChecked = Array.from(checkboxes).some(c => c.checked);
+        document.getElementById('post-btn').disabled = !anyChecked;
+      });
+    });
+    document.getElementById('post-btn').disabled = true;
+  } else {
+    previewContainer.innerHTML += '<p class="text-muted">No se encontraron imágenes de vista previa.</p>';
+    document.getElementById('post-btn').disabled = false;
+  }
 }
 
 // Form submit handler (not needed since we handle it via button click)

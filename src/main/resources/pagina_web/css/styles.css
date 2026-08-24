@@ -5,126 +5,51 @@
 */
 
 html, body {
-    height: 100%;
-    width: 100%;
-    /*margin: 0;
-    padding: 0;*/
-    font-size:14px;
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-size: 14px;
 }
 
 body {
   font-family: "Open Sans", Helvetica, sans-serif;
 }
 
-header{
-  border-bottom:2px solid #2B6331;
-  /*border-right:3px solid #Dfe3ee;*/
-    height:12%;
-    width: 100%;
-    min-height: 80px;
-  /*position:relative;*/
-  /*overflow:hidden;*/
-  /*background-size: cover;*/
-  /*margin:2%;/*
-  /*border-radius:20px;*/
-
-   /* background-color: #cbdadb;*/
-   /* background-color: #eeeeee; */
-   /* border: 5px;*/
-  }
-
-legend.scheduler-border {
-    width:inherit; /* Or auto */
-    padding:0 10px; /* To give a bit of padding on the left and right */
-    border-bottom:none;
-}
-
-.header img {
-  float: left;
-  /*width: 140px;*/
-    margin-left: 5px;
-    margin-top: 10px;
-    width:7%;
-  background: transparent;
-}
-
-h1 {
-  position: relative;
-  color: #2B6331;
-   /* font-weight: bold !important;*/
-    padding-left: 10px;
-}
-h1::first-letter {
-  font-size: 150%;
-  color: #7cb142;
-}
-
-h2 {
-   text-align: center;
-    color: #2B6331;
-    /*font-weight: bold !important;*/
-}
-
-label {
-  display: inline-block;
-  width: 300px;
-}
-/*
-#parameters{
-   !* position: relative;*!
-  float:right;
-  !*margin: 0 auto;*!
-  !*position: absolute;*!
-  !*top: 90px;*!
-  !*right: 5px;*!
-  text-align: center;
-  width: 100%;
-  height: 100%;
-  !* Form outline *!
-  !*padding: 1em;*!
-  !*border: 1px solid #fcfff7;*!
-  !*border-radius: 0.5em;*!
-!*  background-color: #fcfff7;*!
-  !*background-color:  #cbdadb ;*!
-    background-color: #cccccc;
-    border:2px solid #2B6331;
-    overflow-y:auto
-}*/
-
-
-/*#map{
-    height: 100%;
-    width: 78%;
-    width: auto;
-    float: left;
-    border:1px solid #fcfff7;
-    border-radius: 1em;
-}*/
-
-#map-container{
-    padding-top:0px;
-    padding-left:0px;
-    padding-right: 0px;
-    /*border: 1px solid black;*/
-    height: 88%;
-    width: 100%;
+#map-container {
+    padding: 0;
+    margin: 0;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
 }
 
 .row {
     position: relative;
-    height: 100%;
+    height: 100vh;
     width: 100%;
+    margin: 0;
+}
+
+.col-9 {
+    height: 100vh;
+}
+
+.sidebar-panel {
+    height: 100vh;
+    max-height: 100vh;
+    overflow-y: auto;
+    box-sizing: border-box;
 }
 
 #map {
     position: relative;
-    margin:0;
-    padding:0;
-    /*border: 1px solid black;*/
-    border-right:1px solid #2B6331;
-    /*border-radius: 4px;*/
+    margin: 0;
+    padding: 0;
+    border-right: 1px solid #2B6331;
     height: 100%;
-    width: 100%; /* This means "100% of the width of its container"*/
+    width: 100%;
 }
 
 legend{

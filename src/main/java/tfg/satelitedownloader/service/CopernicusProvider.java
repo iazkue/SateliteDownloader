@@ -131,62 +131,40 @@ public class CopernicusProvider implements Provider {
             }
         }
 
-        // First we get the token for the download
-        String encodedUsername = URLEncoder.encode(propsReader.get("COPERNICUS_USERNAME"), StandardCharsets.UTF_8);
-        String encodedPassword = URLEncoder.encode(propsReader.get("COPERNICUS_PASSWORD"), StandardCharsets.UTF_8);
-
-        String formData = "grant_type=password" +
-                "&client_id=cdse-public" +
-                "&username=" + encodedUsername +
-                "&password=" + encodedPassword;
-
-        HttpRequest tokenRequest = HttpRequest.newBuilder()
-                .uri(URI.create(propsReader.get("COPERNICUS_TOKEN")))
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .POST(HttpRequest.BodyPublishers.ofString(formData))
-                .build();
-
-        HttpResponse<String> tokenResponse = client.send(tokenRequest, HttpResponse.BodyHandlers.ofString());
-
-        JsonNode rootNode = objectMapper.readTree(tokenResponse.body());
-        System.out.println("Token response: " + tokenResponse.body());
-
-        String accessToken = rootNode.path("access_token").asText();
-
-        String refreshToken = rootNode.path("refresh_token").asText();
-
+        String accessToken = getAccessToken();
         downloadFile(accessToken, (CopernicusTile) tile);
     }
 
     private void downloadFile(String token, CopernicusTile tile) throws IOException, InterruptedException {
         String productId = tile.getParametersForDownload()[0];
-        String downloadUrl = propsReader.get("COPERNICUS_API") + "(" + productId + ")/$value";
+        String downloadUrl = propsReader.get("COPERNICUS_API")
+                .replace("catalogue.dataspace.copernicus.eu", "download.dataspace.copernicus.eu")
+                + "(" + productId + ")/$value";
         String outputFile = tile.getName() + ".zip";
         String outputDirectory = propsReader.get("COPERNICUS_FOLDER");
         Path outputPath = Paths.get(outputDirectory, outputFile);
         Files.createDirectories(outputPath.getParent());
         String expectedMd5 = tile.getMd5Hash();
 
+        System.out.println("Descargando: " + downloadUrl + " -> " + outputPath);
+
         ProcessBuilder processBuilder = new ProcessBuilder(
                 "curl",
-                "-H", "Authorization: Bearer " + token,
-                propsReader.get("COPERNICUS_API") + "(" + productId + ")/$value",
+                "-f",
+                "-sS",
                 "--location-trusted",
-                "-o", outputPath.toString()).inheritIO();
+                "-H", "Authorization: Bearer " + token,
+                downloadUrl,
+                "-o", outputPath.toString());
 
-        System.out.println("Descargando: " + outputPath);
         Process process = processBuilder.start();
 
-        // Capture output (stdout)
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-
+        StringBuilder errLog = new StringBuilder();
+        try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
             String line;
-            while ((line = reader.readLine()) != null) {
-                System.out.println(line);
-            }
             while ((line = errorReader.readLine()) != null) {
                 System.err.println(line);
+                errLog.append(line).append("\n");
             }
         }
 
@@ -212,14 +190,14 @@ public class CopernicusProvider implements Provider {
                     } catch (IOException e) {
                         System.err.println("No se pudo eliminar el archivo corrupto: " + outputPath);
                     }
-                    throw new IOException("MD5 checksum mismatch for file: " + outputPath);
+                    throw new IOException("MD5 checksum mismatch for file: " + outputPath + " (Esperado: " + expectedMd5 + ", Actual: " + actualMd5 + ")");
                 }
             } else {
                 System.out.println("No hay MD5 disponible para verificar");
             }
         } else {
-            System.err.println("Descarga fallida: " + exitCode);
-            throw new IOException("Descarga fallida: " + exitCode);
+            System.err.println("Descarga fallida con código de salida: " + exitCode + ". Error: " + errLog);
+            throw new IOException("Descarga fallida (curl exit code " + exitCode + "): " + errLog);
         }
     }
 
@@ -282,9 +260,11 @@ public class CopernicusProvider implements Provider {
             return;
         }
 
+        String targetUrl = previewLink.replace("catalogue.dataspace.copernicus.eu", "download.dataspace.copernicus.eu");
+
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(previewLink))
+                    .uri(URI.create(targetUrl))
                     .header("Authorization", "Bearer " + accessToken)
                     .GET()
                     .build();
@@ -318,8 +298,15 @@ public class CopernicusProvider implements Provider {
      * @throws InterruptedException If the request is interrupted
      */
     public String getAccessToken() throws IOException, InterruptedException {
-        String encodedUsername = URLEncoder.encode(propsReader.get("COPERNICUS_USERNAME"), StandardCharsets.UTF_8);
-        String encodedPassword = URLEncoder.encode(propsReader.get("COPERNICUS_PASSWORD"), StandardCharsets.UTF_8);
+        String username = propsReader.get("COPERNICUS_USERNAME");
+        String password = propsReader.get("COPERNICUS_PASSWORD");
+
+        if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
+            throw new IOException("Faltan las credenciales COPERNICUS_USERNAME / COPERNICUS_PASSWORD en config.properties o .env");
+        }
+
+        String encodedUsername = URLEncoder.encode(username, StandardCharsets.UTF_8);
+        String encodedPassword = URLEncoder.encode(password, StandardCharsets.UTF_8);
 
         String formData = "grant_type=password" +
                 "&client_id=cdse-public" +
@@ -333,11 +320,20 @@ public class CopernicusProvider implements Provider {
                 .build();
 
         HttpResponse<String> tokenResponse = client.send(tokenRequest, HttpResponse.BodyHandlers.ofString());
+
+        if (tokenResponse.statusCode() != 200) {
+            System.err.println("Fallo al obtener token de Copernicus (HTTP " + tokenResponse.statusCode() + "): " + tokenResponse.body());
+            throw new IOException("Fallo en la autenticación de Copernicus (HTTP " + tokenResponse.statusCode() + "): " + tokenResponse.body());
+        }
+
         JsonNode rootNode = objectMapper.readTree(tokenResponse.body());
-
         String accessToken = rootNode.path("access_token").asText();
-        System.out.println("Access token obtained successfully");
 
+        if (accessToken == null || accessToken.isEmpty()) {
+            throw new IOException("La respuesta del token de Copernicus no incluye access_token: " + tokenResponse.body());
+        }
+
+        System.out.println("Access token obtenido correctamente.");
         return accessToken;
     }
 

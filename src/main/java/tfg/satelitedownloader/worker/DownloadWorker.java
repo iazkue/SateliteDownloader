@@ -86,7 +86,30 @@ public class DownloadWorker implements Managed, Runnable {
     }
 
     private void processRequest(SatelliteDownloadRequest request) {
+        String taskId = request.getTaskId();
+        tfg.satelitedownloader.service.DownloadQueueManager queueManager = tfg.satelitedownloader.service.DownloadQueueManager
+                .getInstance();
+        tfg.satelitedownloader.model.SatelliteDownloadTask task = queueManager.getTask(taskId);
+
+        if (task == null) {
+            int count = request.getSelectedImages() != null ? request.getSelectedImages().size() : 1;
+            task = new tfg.satelitedownloader.model.SatelliteDownloadTask(
+                    taskId != null ? taskId : "task_" + System.currentTimeMillis(),
+                    request.getInitialDay(),
+                    request.getFinalDay(),
+                    count);
+            queueManager.registerTask(task);
+            taskId = task.getTaskId();
+        }
+
+        if (task.isCancelled()) {
+            LOGGER.info("Task " + taskId + " was cancelled before processing.");
+            return;
+        }
+
         try {
+            queueManager.updateProgress(taskId, "DOWNLOADING", 0, task.getTotalImages(), "", 0, "Buscando imágenes...");
+
             int option = 1; // Default to Copernicus
             Provider tileProvider;
             String name = "";
@@ -118,11 +141,12 @@ public class DownloadWorker implements Managed, Runnable {
                 default -> throw new IllegalArgumentException("Invalid option");
             }
 
-            LOGGER.info("Iniciando búsqueda de imágenes satelitales...");
+            LOGGER.info("Starting to search for satellite images...");
             List<Tile> tiles = tileProvider.getTile(name, dateStart, dateEnd, area);
 
             if (tiles.isEmpty()) {
-                LOGGER.info("No se encontraron imágenes en el área y fecha especificadas.");
+                LOGGER.info("No images found in the specified area and date.");
+                queueManager.updateProgress(taskId, "FAILED", 0, 0, "", 0, "No images found.");
                 return;
             }
 
@@ -142,23 +166,63 @@ public class DownloadWorker implements Managed, Runnable {
                         tilesToDownload.add(tile);
                     }
                 }
-                LOGGER.info("Filtrando a " + tilesToDownload.size() + " imágenes seleccionadas.");
+                LOGGER.info("Filtering to " + tilesToDownload.size() + " selected images.");
             }
 
             if (tilesToDownload.isEmpty()) {
                 LOGGER.info("No hay tiles que coincidan con la selección del usuario.");
+                queueManager.updateProgress(taskId, "FAILED", 0, 0, "", 0,
+                        "No images match the user's selection.");
                 return;
             }
 
-            Tile firstTile = tilesToDownload.get(0);
-            String tileInfo = firstTile.getParametersForDownload().length > 0 ? firstTile.getParametersForDownload()[0]
-                    : "tile";
-            LOGGER.info("Iniciando descarga de: " + tileInfo);
-            tileProvider.downloadTile(firstTile);
-            LOGGER.info("Descarga completada con éxito para la petición pendiente.");
+            int totalTiles = tilesToDownload.size();
+            queueManager.updateProgress(taskId, "DOWNLOADING", 0, totalTiles, "", 0,
+                    "Starting download of " + totalTiles + " image(s)...");
+
+            for (int i = 0; i < totalTiles; i++) {
+                if (task.isCancelled()) {
+                    LOGGER.info("Task " + taskId + " cancelled during execution.");
+                    queueManager.updateProgress(taskId, "CANCELLED", i, totalTiles, "", (i * 100) / totalTiles,
+                            "Descarga cancelada por el usuario.");
+                    return;
+                }
+
+                Tile currentTile = tilesToDownload.get(i);
+                String tileName = currentTile instanceof tfg.satelitedownloader.model.CopernicusTile c ? c.getName()
+                        : (currentTile.getParametersForDownload().length > 0 ? currentTile.getParametersForDownload()[0]
+                                : "tile");
+                int currentPercent = (i * 100) / totalTiles;
+
+                queueManager.updateProgress(
+                        taskId,
+                        "DOWNLOADING",
+                        i + 1,
+                        totalTiles,
+                        tileName,
+                        currentPercent,
+                        "Descargando imagen " + (i + 1) + " de " + totalTiles + ": " + tileName);
+
+                tileProvider.downloadTile(currentTile);
+
+                int endPercent = ((i + 1) * 100) / totalTiles;
+                queueManager.updateProgress(
+                        taskId,
+                        "DOWNLOADING",
+                        i + 1,
+                        totalTiles,
+                        tileName,
+                        endPercent,
+                        "Completed image " + (i + 1) + " of " + totalTiles);
+            }
+
+            queueManager.updateProgress(taskId, "COMPLETED", totalTiles, totalTiles, "", 100,
+                    "Download completed successfully.");
+            LOGGER.info("Download completed successfully for task " + taskId);
 
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Falló la descarga de la imagen en segundo plano: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "Failed to download image in background: " + e.getMessage(), e);
+            queueManager.updateProgress(taskId, "FAILED", 0, 0, "", 0, "Error in download: " + e.getMessage());
         }
     }
 }
