@@ -49,7 +49,7 @@ public class SatelliteDownloadTask {
         this.totalImages = selectedImagesCount;
         this.currentFilename = "";
         this.percent = 0;
-        this.message = "En cola de espera...";
+        this.message = "Waiting to queue...";
     }
 
     public String getTaskId() {
@@ -140,7 +140,7 @@ public class SatelliteDownloadTask {
         this.cancelled = cancelled;
         if (cancelled) {
             this.status = "CANCELLED";
-            this.message = "Descarga cancelada por el usuario";
+            this.message = "Download cancelled";
         }
     }
 }

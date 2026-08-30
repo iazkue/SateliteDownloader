@@ -191,14 +191,14 @@ function renderDownloadQueue(tasks) {
 
   if (!tasks || tasks.length === 0) {
     if (queueBadge) {
-      queueBadge.textContent = '0 activas';
+      queueBadge.textContent = '0 actives';
     }
-    queueList.innerHTML = '<p class="text-muted text-center m-0 py-2" style="font-size: 0.85rem;">No hay descargas en la cola</p>';
+    queueList.innerHTML = '<p class="text-muted text-center m-0 py-2" style="font-size: 0.85rem;">There are no active downloads.</p>';
     return;
   }
   const activeTasks = tasks.filter(t => t.status === 'QUEUED' || t.status === 'DOWNLOADING').length;
   if (queueBadge) {
-    queueBadge.textContent = `${activeTasks} activa(s)`;
+    queueBadge.textContent = `${activeTasks} active(s)`;
   }
 
   // Sort tasks by taskId descending so newest is at top
@@ -211,11 +211,11 @@ function renderDownloadQueue(tasks) {
 
     if (task.status === 'QUEUED') {
       badgeClass = 'bg-warning text-dark';
-      badgeText = 'En Cola';
+      badgeText = 'In Queue';
       progressBarClass = 'bg-warning';
     } else if (task.status === 'DOWNLOADING') {
       badgeClass = 'bg-primary';
-      badgeText = 'Descargando';
+      badgeText = 'Downloading';
       progressBarClass = 'bg-primary progress-bar-striped progress-bar-animated';
     } else if (task.status === 'COMPLETED') {
       badgeClass = 'bg-success';
@@ -246,7 +246,7 @@ function renderDownloadQueue(tasks) {
         </div>
         <div class="d-flex justify-content-between align-items-center mt-1">
           <small class="text-muted text-truncate font-monospace" style="font-size: 0.75rem; max-width: 70%;">${message}</small>
-          ${showCancel ? `<button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 0.75rem;" onclick="cancelQueueTask('${task.taskId}')">Cancelar</button>` : ''}
+          ${showCancel ? `<button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 0.75rem;" onclick="cancelQueueTask('${task.taskId}')">Cancel</button>` : ''}
         </div>
       </div>
     `;
@@ -468,7 +468,7 @@ function displayPreviews(result) {
     });
     document.getElementById('post-btn').disabled = true;
   } else {
-    previewContainer.innerHTML += '<p class="text-muted">No se encontraron imágenes de vista previa.</p>';
+    previewContainer.innerHTML += '<p class="text-muted">There are no preview images.</p>';
     document.getElementById('post-btn').disabled = false;
   }
 }

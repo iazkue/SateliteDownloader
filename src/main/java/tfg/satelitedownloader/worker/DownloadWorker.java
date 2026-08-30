@@ -80,7 +80,7 @@ public class DownloadWorker implements Managed, Runnable {
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Error inesperado procesando descarga asíncrona.", e);
+                LOGGER.log(Level.SEVERE, "Unexpected error processing asynchronous download.", e);
             }
         }
     }
@@ -170,7 +170,7 @@ public class DownloadWorker implements Managed, Runnable {
             }
 
             if (tilesToDownload.isEmpty()) {
-                LOGGER.info("No hay tiles que coincidan con la selección del usuario.");
+                LOGGER.info("No tiles match the user's selection.");
                 queueManager.updateProgress(taskId, "FAILED", 0, 0, "", 0,
                         "No images match the user's selection.");
                 return;
@@ -184,7 +184,7 @@ public class DownloadWorker implements Managed, Runnable {
                 if (task.isCancelled()) {
                     LOGGER.info("Task " + taskId + " cancelled during execution.");
                     queueManager.updateProgress(taskId, "CANCELLED", i, totalTiles, "", (i * 100) / totalTiles,
-                            "Descarga cancelada por el usuario.");
+                            "Download cancelled by the user.");
                     return;
                 }
 
@@ -201,7 +201,7 @@ public class DownloadWorker implements Managed, Runnable {
                         totalTiles,
                         tileName,
                         currentPercent,
-                        "Descargando imagen " + (i + 1) + " de " + totalTiles + ": " + tileName);
+                        "Downloading image " + (i + 1) + " of " + totalTiles + ": " + tileName);
 
                 tileProvider.downloadTile(currentTile);
 
