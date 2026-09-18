@@ -57,32 +57,36 @@ public class DownloadWorker implements Managed, Runnable {
                 // Petizioa egon arte haria blokeatzen du (consumer)
                 SatelliteDownloadRequest request = queue.take();
                 LOGGER.info("Se ha extraído una petición de descarga de la cola.");
-
-                // Since this is a background thread without @UnitOfWork, we need to manually
-                // open a session
-                // and bind it to the thread context so that the DAOs can use currentSession().
-                try (Session session = sessionFactory.openSession()) {
-                    ManagedSessionContext.bind(session);
-                    Transaction transaction = session.beginTransaction();
-                    try {
-                        processRequest(request);
-                        transaction.commit();
-                    } catch (Exception e) {
-                        transaction.rollback();
-                        throw e;
-                    } finally {
-                        ManagedSessionContext.unbind(sessionFactory);
-                    }
-                }
-
+                processRequest(request);
             } catch (InterruptedException e) {
                 LOGGER.info("DownloadWorkerThread ha sido interrumpido.");
                 Thread.currentThread().interrupt();
                 break;
-            } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Unexpected error processing asynchronous download.", e);
+            } catch (Throwable t) {
+                LOGGER.log(Level.SEVERE, "Unexpected error processing asynchronous download in worker thread.", t);
             }
         }
+    }
+
+    private void executeInSession(ActionWithException action) throws Exception {
+        try (Session session = sessionFactory.openSession()) {
+            ManagedSessionContext.bind(session);
+            Transaction transaction = session.beginTransaction();
+            try {
+                action.execute();
+                transaction.commit();
+            } catch (Exception e) {
+                transaction.rollback();
+                throw e;
+            } finally {
+                ManagedSessionContext.unbind(sessionFactory);
+            }
+        }
+    }
+
+    @FunctionalInterface
+    private interface ActionWithException {
+        void execute() throws Exception;
     }
 
     private void processRequest(SatelliteDownloadRequest request) {
@@ -203,7 +207,7 @@ public class DownloadWorker implements Managed, Runnable {
                         currentPercent,
                         "Downloading image " + (i + 1) + " of " + totalTiles + ": " + tileName);
 
-                tileProvider.downloadTile(currentTile);
+                executeInSession(() -> tileProvider.downloadTile(currentTile));
 
                 int endPercent = ((i + 1) * 100) / totalTiles;
                 queueManager.updateProgress(
@@ -220,7 +224,7 @@ public class DownloadWorker implements Managed, Runnable {
                     "Download completed successfully.");
             LOGGER.info("Download completed successfully for task " + taskId);
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
             LOGGER.log(Level.SEVERE, "Failed to download image in background: " + e.getMessage(), e);
             queueManager.updateProgress(taskId, "FAILED", 0, 0, "", 0, "Error in download: " + e.getMessage());
         }

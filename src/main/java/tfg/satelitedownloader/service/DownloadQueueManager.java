@@ -21,6 +21,7 @@ public class DownloadQueueManager {
     }
 
     public SatelliteDownloadTask createTask(String iday, String fday, int selectedImagesCount) {
+        pruneOldTasks();
         String taskId = "task_" + System.currentTimeMillis() + "_" + (int) (Math.random() * 1000);
         SatelliteDownloadTask task = new SatelliteDownloadTask(taskId, iday, fday, selectedImagesCount);
         tasks.put(taskId, task);
@@ -29,7 +30,22 @@ public class DownloadQueueManager {
 
     public void registerTask(SatelliteDownloadTask task) {
         if (task != null && task.getTaskId() != null) {
+            pruneOldTasks();
             tasks.put(task.getTaskId(), task);
+        }
+    }
+
+    private void pruneOldTasks() {
+        if (tasks.size() > 50) {
+            for (Map.Entry<String, SatelliteDownloadTask> entry : tasks.entrySet()) {
+                String status = entry.getValue().getStatus();
+                if ("COMPLETED".equals(status) || "CANCELLED".equals(status) || "FAILED".equals(status)) {
+                    tasks.remove(entry.getKey());
+                    if (tasks.size() <= 30) {
+                        break;
+                    }
+                }
+            }
         }
     }
 

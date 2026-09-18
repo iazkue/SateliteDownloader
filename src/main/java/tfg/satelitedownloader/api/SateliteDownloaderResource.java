@@ -168,10 +168,12 @@ public class SateliteDownloaderResource {
             previewsFolder = "imagesPreviewFolder"; // fallback
         }
         File file = new File(previewsFolder, filename);
-        if (!file.exists()) {
+        if (!file.exists() || !file.isFile()) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(file).build();
+        return Response.ok(file)
+                .header("Cache-Control", "public, max-age=86400")
+                .build();
     }
 
     /**

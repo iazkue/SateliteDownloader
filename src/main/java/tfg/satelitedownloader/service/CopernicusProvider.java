@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.List;
@@ -34,7 +35,9 @@ public class CopernicusProvider implements Provider {
             .build();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private String refreshToken = "eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJhZmFlZTU2Zi1iNWZiLTRiMzMtODRlYS0zMWY2NzMyMzNhNzgifQ.eyJleHAiOjE3NDM1NjE0MzUsImlhdCI6MTc0MzU1NzgzNSwianRpIjoiOTI1MzM1NzAtNTk3ZS00NjUyLWJjMDctYzdlNTBmN2I0ZTg4IiwiaXNzIjoiaHR0cHM6Ly9pZGVudGl0eS5kYXRhc3BhY2UuY29wZXJuaWN1cy5ldS9hdXRoL3JlYWxtcy9DRFNFIiwiYXVkIjoiaHR0cHM6Ly9pZGVudGl0eS5kYXRhc3BhY2UuY29wZXJuaWN1cy5ldS9hdXRoL3JlYWxtcy9DRFNFIiwic3ViIjoiOWEyN2JjNzAtYTVjNC00YTU4LTkzZDgtYWMzZWIxZmE2OTlkIiwidHlwIjoiUmVmcmVzaCIsImF6cCI6ImNkc2UtcHVibGljIiwic2Vzc2lvbl9zdGF0ZSI6ImI1NDU2YjVlLWEyZjktNDIwMC1hNzRmLTIyNjg4YjI1ZmYzMCIsInNjb3BlIjoiQVVESUVOQ0VfUFVCTElDIG9wZW5pZCBlbWFpbCBwcm9maWxlIG9uZGVtYW5kX3Byb2Nlc3NpbmcgdXNlci1jb250ZXh0Iiwic2lkIjoiYjU0NTZiNWUtYTJmOS00MjAwLWE3NGYtMjI2ODhiMjVmZjMwIn0.pV_ToxJIY92U-pPkdsaKo0HJQq-LuP5fpY1XNZB5KB0";
+    private String cachedAccessToken;
+    private Instant tokenExpiresAt = Instant.MIN;
+    private final Object tokenLock = new Object();
 
     public CopernicusProvider() {
         this(null);
@@ -153,9 +156,14 @@ public class CopernicusProvider implements Provider {
                 "-f",
                 "-sS",
                 "--location-trusted",
+                "--connect-timeout", "30",
+                "--speed-limit", "1024",
+                "--speed-time", "60",
                 "-H", "Authorization: Bearer " + token,
                 downloadUrl,
                 "-o", outputPath.toString());
+
+        processBuilder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
 
         Process process = processBuilder.start();
 
@@ -229,11 +237,17 @@ public class CopernicusProvider implements Provider {
     private static String calculateMD5(String filePath) throws IOException {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] fileBytes = Files.readAllBytes(Paths.get(filePath));
-            byte[] digest = md.digest(fileBytes);
+            try (InputStream is = Files.newInputStream(Paths.get(filePath));
+                 DigestInputStream dis = new DigestInputStream(is, md)) {
+                byte[] buffer = new byte[65536]; // 64 KB buffer instead of loading multi-GB file into heap
+                while (dis.read(buffer) != -1) {
+                    // dis updates md automatically
+                }
+            }
+            byte[] digest = md.digest();
 
             // Convert byte array to hex string
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder(digest.length * 2);
             for (byte b : digest) {
                 sb.append(String.format("%02x", b));
             }
@@ -261,28 +275,57 @@ public class CopernicusProvider implements Provider {
         }
 
         String targetUrl = previewLink.replace("catalogue.dataspace.copernicus.eu", "download.dataspace.copernicus.eu");
+        String token = (accessToken != null && !accessToken.isEmpty()) ? accessToken : getAccessToken();
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(targetUrl))
-                    .header("Authorization", "Bearer " + accessToken)
+                    .header("Authorization", "Bearer " + token)
                     .GET()
                     .build();
 
             HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
-            if (response.statusCode() == 200) {
-                Path outputFilePath = Paths.get(outputPath);
-                Files.createDirectories(outputFilePath.getParent());
+            try (InputStream body = response.body()) {
+                if (response.statusCode() == 200) {
+                    Path outputFilePath = Paths.get(outputPath);
+                    if (outputFilePath.getParent() != null) {
+                        Files.createDirectories(outputFilePath.getParent());
+                    }
 
-                Files.copy(
-                        response.body(),
-                        outputFilePath,
-                        StandardCopyOption.REPLACE_EXISTING);
+                    Files.copy(
+                            body,
+                            outputFilePath,
+                            StandardCopyOption.REPLACE_EXISTING);
 
-                System.out.println("Preview image downloaded successfully to: " + outputPath);
-            } else {
-                System.err.println("Failed to download preview image. Status code: " + response.statusCode());
+                    System.out.println("Preview image downloaded successfully to: " + outputPath);
+                } else if (response.statusCode() == 401) {
+                    System.err.println("Preview download unauthorized (401). Token expired, retrying with fresh token...");
+                    invalidateToken();
+                    String freshToken = getAccessToken();
+
+                    HttpRequest retryRequest = HttpRequest.newBuilder()
+                            .uri(URI.create(targetUrl))
+                            .header("Authorization", "Bearer " + freshToken)
+                            .GET()
+                            .build();
+
+                    HttpResponse<InputStream> retryResponse = client.send(retryRequest, HttpResponse.BodyHandlers.ofInputStream());
+                    try (InputStream retryBody = retryResponse.body()) {
+                        if (retryResponse.statusCode() == 200) {
+                            Path outputFilePath = Paths.get(outputPath);
+                            if (outputFilePath.getParent() != null) {
+                                Files.createDirectories(outputFilePath.getParent());
+                            }
+                            Files.copy(retryBody, outputFilePath, StandardCopyOption.REPLACE_EXISTING);
+                            System.out.println("Preview image downloaded successfully after token refresh to: " + outputPath);
+                        } else {
+                            System.err.println("Retry preview download failed. Status: " + retryResponse.statusCode());
+                        }
+                    }
+                } else {
+                    System.err.println("Failed to download preview image. Status code: " + response.statusCode());
+                }
             }
         } catch (IOException | InterruptedException e) {
             System.err.println("Error downloading preview image: " + e.getMessage());
@@ -291,50 +334,71 @@ public class CopernicusProvider implements Provider {
     }
 
     /**
-     * Gets an access token for Copernicus API authentication
+     * Invalidates the cached access token, forcing the next call to getAccessToken() to fetch a fresh token.
+     */
+    public void invalidateToken() {
+        synchronized (tokenLock) {
+            this.cachedAccessToken = null;
+            this.tokenExpiresAt = Instant.MIN;
+        }
+    }
+
+    /**
+     * Gets an access token for Copernicus API authentication, with caching and expiration tracking.
      * 
      * @return The access token
      * @throws IOException          If the token request fails
      * @throws InterruptedException If the request is interrupted
      */
     public String getAccessToken() throws IOException, InterruptedException {
-        String username = propsReader.get("COPERNICUS_USERNAME");
-        String password = propsReader.get("COPERNICUS_PASSWORD");
+        synchronized (tokenLock) {
+            // Return cached token if valid for at least another 60 seconds
+            if (cachedAccessToken != null && Instant.now().isBefore(tokenExpiresAt.minusSeconds(60))) {
+                return cachedAccessToken;
+            }
 
-        if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
-            throw new IOException("Faltan las credenciales COPERNICUS_USERNAME / COPERNICUS_PASSWORD en config.properties o .env");
+            String username = propsReader.get("COPERNICUS_USERNAME");
+            String password = propsReader.get("COPERNICUS_PASSWORD");
+
+            if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
+                throw new IOException("Faltan las credenciales COPERNICUS_USERNAME / COPERNICUS_PASSWORD en config.properties o .env");
+            }
+
+            String encodedUsername = URLEncoder.encode(username, StandardCharsets.UTF_8);
+            String encodedPassword = URLEncoder.encode(password, StandardCharsets.UTF_8);
+
+            String formData = "grant_type=password" +
+                    "&client_id=cdse-public" +
+                    "&username=" + encodedUsername +
+                    "&password=" + encodedPassword;
+
+            HttpRequest tokenRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(propsReader.get("COPERNICUS_TOKEN")))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString(formData))
+                    .build();
+
+            HttpResponse<String> tokenResponse = client.send(tokenRequest, HttpResponse.BodyHandlers.ofString());
+
+            if (tokenResponse.statusCode() != 200) {
+                System.err.println("Fallo al obtener token de Copernicus (HTTP " + tokenResponse.statusCode() + "): " + tokenResponse.body());
+                throw new IOException("Fallo en la autenticación de Copernicus (HTTP " + tokenResponse.statusCode() + "): " + tokenResponse.body());
+            }
+
+            JsonNode rootNode = objectMapper.readTree(tokenResponse.body());
+            String accessToken = rootNode.path("access_token").asText();
+
+            if (accessToken == null || accessToken.isEmpty()) {
+                throw new IOException("La respuesta del token de Copernicus no incluye access_token: " + tokenResponse.body());
+            }
+
+            long expiresInSeconds = rootNode.path("expires_in").asLong(600);
+            this.cachedAccessToken = accessToken;
+            this.tokenExpiresAt = Instant.now().plusSeconds(expiresInSeconds);
+
+            System.out.println("Access token obtenido correctamente (válido por " + expiresInSeconds + "s).");
+            return accessToken;
         }
-
-        String encodedUsername = URLEncoder.encode(username, StandardCharsets.UTF_8);
-        String encodedPassword = URLEncoder.encode(password, StandardCharsets.UTF_8);
-
-        String formData = "grant_type=password" +
-                "&client_id=cdse-public" +
-                "&username=" + encodedUsername +
-                "&password=" + encodedPassword;
-
-        HttpRequest tokenRequest = HttpRequest.newBuilder()
-                .uri(URI.create(propsReader.get("COPERNICUS_TOKEN")))
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .POST(HttpRequest.BodyPublishers.ofString(formData))
-                .build();
-
-        HttpResponse<String> tokenResponse = client.send(tokenRequest, HttpResponse.BodyHandlers.ofString());
-
-        if (tokenResponse.statusCode() != 200) {
-            System.err.println("Fallo al obtener token de Copernicus (HTTP " + tokenResponse.statusCode() + "): " + tokenResponse.body());
-            throw new IOException("Fallo en la autenticación de Copernicus (HTTP " + tokenResponse.statusCode() + "): " + tokenResponse.body());
-        }
-
-        JsonNode rootNode = objectMapper.readTree(tokenResponse.body());
-        String accessToken = rootNode.path("access_token").asText();
-
-        if (accessToken == null || accessToken.isEmpty()) {
-            throw new IOException("La respuesta del token de Copernicus no incluye access_token: " + tokenResponse.body());
-        }
-
-        System.out.println("Access token obtenido correctamente.");
-        return accessToken;
     }
 
 }
