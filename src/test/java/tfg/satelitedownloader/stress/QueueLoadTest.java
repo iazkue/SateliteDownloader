@@ -111,7 +111,7 @@ public class QueueLoadTest {
         boolean finished = latch.await(10, TimeUnit.SECONDS);
 
         // Verification
-        assertTrue(finished, "The asynchronous system has not been able to process the entire load ("s
+        assertTrue(finished, "The asynchronous system has not been able to process the entire load ("
                 + processedCounter.get() + "/" + NUM_REQUESTS + ")");
         verify(provider, times(NUM_REQUESTS)).downloadTile(any(Tile.class));
     }
